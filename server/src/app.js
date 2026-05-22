@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors'
 import masterRouter from './routes/index.js';
 import cookieParser from 'cookie-parser';
+import errorHandler from './exceptions/errorHandler.js';
 
 const app = express();
 
@@ -18,5 +19,7 @@ app.use('/api',masterRouter);
 app.get('/health',(req, res) => {
     res.status(200).send('Health Check Successful!');
 });
+
+app.use(errorHandler);
 
 export default app;

@@ -9,7 +9,7 @@ export const validate = (schema) => {
 
             next();
         } catch (error) {
-            const firstError = error.errors?.[0]?.message || 'Validation Error';
+            const firstError = error.issues?.[0]?.message || error.errors?.[0]?.message || 'Validation Error';
             return next(new ApiError(400, firstError));
         }
     };
