@@ -22,9 +22,18 @@ export const getUserByEmail = async (email) => {
     });
 };
 
-export const createUser = async (newUser) => {
+export const createUser = async (newUser = {}) => {
     return await prisma.user.create({
         data: newUser
+    });
+};
+
+export const updateUser = async (userId, data) => {
+    return await prisma.user.update({
+        data: data,
+        where: {
+            id: userId
+        }
     });
 };
 

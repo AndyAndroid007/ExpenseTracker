@@ -19,7 +19,7 @@ export const login = async ({ email, password }) => {
     },
         process.env.JWT_SECRET,
         {
-            expiresIn: process.env.expires_in || '1h'
+            expiresIn: process.env.expires_in || '1d'
         })
 
     return {
@@ -32,28 +32,56 @@ export const login = async ({ email, password }) => {
     }
 };
 
-export const register = async ({ name, email, password }) => {
-    const user = await userService.getUserByEmail(email);
-    if (user) {
+export const register = async ({ userId = null, name, email, password }) => {
+    const existingUser = await userService.getUserByEmail(email);
+    if (existingUser) {
         throw new ApiError(409, "This email is already associated with another user");
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
+    let registerUser;
+    if (userId) {
+        const user = await userService.getUserById(userId);
+        if (!user) {
+            throw new ApiError(404, 'User not found.');
+        }
 
-    const newUser = await userService.createUser({ name, email, password: hashedPassword });
+        registerUser = await userService.updateUser({ id: userId, name, email, password: hashedPassword });
+    }
+    else {
+        registerUser = await userService.createUser({ name, email, password: hashedPassword });
+    }
 
     const token = jwt.sign(
-        { userId: newUser.id },
+        { userId: registerUser.id, isAnonymous: false },
         process.env.JWT_SECRET,
-        { expiresIn: process.env.expires_in || '1h' }
+        { expiresIn: process.env.expires_in || '1d' }
     );
 
     return {
         token,
         user: {
+            id: registerUser.id,
+            name: registerUser.name,
+            email: registerUser.email,
+            isAnonymous: false
+        }
+    }
+};
+
+export const anonymousLogin = async () => {
+    const newUser = await userService.createUser();
+    const token = jwt.sign({
+        userId: newUser.id,
+        isAnonymous: true,
+    }, process.env.JWT_SECRET,
+        { expiresIn: process.env.anonymous_expires_in || '60d' })
+
+    return {
+        token,
+        user: {
             id: newUser.id,
-            name: newUser.name,
-            email: newUser.email
+            isAnonymous: true
         }
     }
 }
