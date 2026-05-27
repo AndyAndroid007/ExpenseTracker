@@ -1,5 +1,7 @@
 import redis from './startUp.js';
 import prisma from '../lib/db.js';
+import logger from '../utils/logger.js';
+import {getTodayInUserZone, getPreviousDate, toIsoDate } from '../utils/dates.js';
 
 const VALID_STREAK_ENTRY_TYPES = new Set([
     'expense',
@@ -12,91 +14,6 @@ const VALID_STREAK_ENTRY_TYPES = new Set([
 const getCurrentKey = (userId) => `streak:${userId}:current`;
 const getLastDateKey = (userId) => `streak:${userId}:last_date`;
 
-const toIsoDate = (date) => {
-    const year = date.getUTCFullYear();
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(date.getUTCDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
-
-const getDateByOffsetMinutes = (date, offsetMinutes) => {
-    const shiftedDate = new Date(date.getTime() + (offsetMinutes * 60 * 1000));
-    return toIsoDate(shiftedDate);
-};
-
-const getDateByTimeZone = (date, timeZone) => {
-    const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    });
-    const parts = formatter.formatToParts(date);
-
-    const year = parts.find((part) => part.type === 'year')?.value;
-    const month = parts.find((part) => part.type === 'month')?.value;
-    const day = parts.find((part) => part.type === 'day')?.value;
-
-    if (!year || !month || !day) {
-        throw new Error('Unable to derive date from timezone');
-    }
-
-    return `${year}-${month}-${day}`;
-};
-
-const parseOffsetToMinutes = (offset) => {
-    if (offset === undefined || offset === null) {
-        return null;
-    }
-
-    if (typeof offset === 'number' && Number.isFinite(offset)) {
-        return Math.trunc(offset);
-    }
-
-    if (typeof offset !== 'string') {
-        return null;
-    }
-
-    const trimmed = offset.trim();
-    if (!trimmed) {
-        return null;
-    }
-
-    if (/^[+-]?\d+$/.test(trimmed)) {
-        return Number.parseInt(trimmed, 10);
-    }
-
-    const match = trimmed.match(/^([+-])(\d{2}):?(\d{2})$/);
-    if (!match) {
-        return null;
-    }
-
-    const sign = match[1] === '-' ? -1 : 1;
-    const hours = Number.parseInt(match[2], 10);
-    const minutes = Number.parseInt(match[3], 10);
-
-    return sign * ((hours * 60) + minutes);
-};
-
-const getTodayInUserZone = ({ date = new Date(), timezone, timezoneOffsetMinutes } = {}) => {
-    const parsedOffset = parseOffsetToMinutes(timezoneOffsetMinutes);
-
-    if (parsedOffset !== null) {
-        return getDateByOffsetMinutes(date, parsedOffset);
-    }
-
-    if (timezone) {
-        return getDateByTimeZone(date, timezone);
-    }
-
-    return toIsoDate(date);
-};
-
-const getPreviousDate = (isoDate) => {
-    const previous = new Date(`${isoDate}T00:00:00.000Z`);
-    previous.setUTCDate(previous.getUTCDate() - 1);
-    return toIsoDate(previous);
-};
 
 const parseCurrentStreak = (value) => {
     if (!value) {
@@ -105,6 +22,46 @@ const parseCurrentStreak = (value) => {
 
     const parsed = Number.parseInt(value, 10);
     return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+
+
+const loadStreakFromRedis = async (userId) => {
+    try {
+        const [currentStreak, lastLoggedDateVal] = await redis.mGet([
+            getCurrentKey(userId),
+            getLastDateKey(userId)
+        ]);
+        
+        if (currentStreak === null || lastLoggedDateVal === null) {
+            return null; //Cache Miss
+        }
+
+        return {
+            currentStreak: Number.parseInt(currentStreak, 10) || 0,
+            lastLoggedDate: lastLoggedDateVal === 'null' ? null : lastLoggedDateVal
+        };
+    } catch (err) {
+        logger.error({ err, userId}, 'Failed to read streak from Redis cache');
+        return null;    
+    }
+
+};
+
+const saveStreakToRedis = async (userId, {currentStreak, lastLoggedDate}) => {
+    try {
+        await redis.mSet([
+            [getCurrentKey(userId), currentStreak],
+            [getLastDateKey(userId), lastLoggedDate || 'null']
+        ]);
+
+        await redis.expire(getCurrentKey(userId), 172800);
+        await redis.expire(getLastDateKey(userId), 172800);
+
+    } catch (err) {
+        logger.error({ err, userId }, 'Failed to save streak to Redis cache');
+        
+    }
 };
 
 const loadStreakFromPostgres = async (userId) => {
@@ -178,7 +135,7 @@ export const maintainStreak = async ({
     now = new Date()
 }) => {
     if (!userId) {
-        throw new Error('userId is required for streak evaluation');
+        throw new Error('UserId is required for streak evaluation');
     }
 
     if (!isValidStreakEntryType(entryType)) {
@@ -196,39 +153,64 @@ export const maintainStreak = async ({
     });
     const yesterday = getPreviousDate(today);
 
-    const { currentStreak, lastLoggedDate } = await loadStreakFromPostgres(userId);
+    let streakData = await loadStreakFromRedis(userId);
+    let cacheHit = true;
+
+    if (!streakData) {
+        cacheHit = false;
+        logger.info({userId}, 'Streak cache miss. Querying database');
+        const dbResult = await loadStreakFromPostgres(userId);
+
+        streakData = {
+            currentStreak: dbResult.currentStreak,
+            lastLoggedDate: dbResult.lastLoggedDate
+        };
+
+        await saveStreakToRedis(userId, streakData);
+    }
+    else {
+        logger.info({ userId }, 'Streak cache hit. Read successfully from Redis');
+    }
+    const currentStreak = streakData.currentStreak;
+    const lastLoggedDate = streakData.lastLoggedDate;
     let nextStreak = currentStreak;
     let nextLastLoggedDate = lastLoggedDate;
     let updated = false;
-
+    // 2. Evaluate streak logic
     if (lastLoggedDate === today) {
+        logger.debug({ userId, today }, 'User already logged today. Streak unchanged.');
         updated = false;
     } else if (lastLoggedDate === yesterday) {
         nextStreak = Math.max(1, currentStreak + 1);
         nextLastLoggedDate = today;
         updated = true;
+        logger.info({ userId, nextStreak }, 'Streak incremented!');
     } else {
         nextStreak = 1;
         nextLastLoggedDate = today;
         updated = true;
+        logger.info({ userId }, 'Streak reset to 1 day.');
     }
-
+    // 3. Write back changes if updated
     if (updated) {
+        // Save to Postgres (Source of truth)
         await persistStreakToPostgres({
             userId,
             currentStreak: nextStreak,
             lastLoggedDate: nextLastLoggedDate
         });
-
-        // Invalidate Redis so subsequent reads repopulate from Postgres (source of truth).
-        await invalidateStreakCache(userId);
+        // Write directly to Redis cache to keep it in sync (no need to delete!)
+        await saveStreakToRedis(userId, {
+            currentStreak: nextStreak,
+            lastLoggedDate: nextLastLoggedDate
+        });
     }
-
     return {
         updated,
         skipped: false,
         streak: nextStreak,
         lastLoggedDate: nextLastLoggedDate,
-        today
+        today,
+        cacheHit
     };
 };

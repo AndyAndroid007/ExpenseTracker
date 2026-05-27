@@ -1,3 +1,4 @@
+import { getDateByOffsetMinutes } from "../utils/dates.js";
 /**
  * Calculates the YYYY-MM-DD date in the user's local timezone.
  * 
@@ -6,17 +7,10 @@
  * @returns {string} Date string in YYYY-MM-DD format
  */
 export const getLocalDateString = (timezoneOffsetMinutes = 0, relativeDays = 0) => {
-    const utcNow = new Date();
-    // Adjust UTC to user's local time (JS timezone offset is negative for positive zones like IST)
-    const userLocalTime = new Date(utcNow.getTime() - (timezoneOffsetMinutes * 60 * 1000));
-    // Adjust relative days
-    userLocalTime.setDate(userLocalTime.getDate() + relativeDays);
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + relativeDays);
     
-    const yyyy = userLocalTime.getFullYear();
-    const mm = String(userLocalTime.getMonth() + 1).padStart(2, '0');
-    const dd = String(userLocalTime.getDate()).padStart(2, '0');
-    
-    return `${yyyy}-${mm}-${dd}`;
+    return getDateByOffsetMinutes(targetDate, timezoneOffsetMinutes);
 };
 
 const WEEKDAYS = {
