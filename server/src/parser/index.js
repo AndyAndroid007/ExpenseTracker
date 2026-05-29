@@ -1,6 +1,7 @@
 import { extractAmount } from './amount.js';
 import { extractCategory } from './categories.js';
 import { parseExpenseDate } from './dates.js';
+import logger from '../utils/logger.js';
 
 /**
  * Main parser entry point.
@@ -12,9 +13,11 @@ import { parseExpenseDate } from './dates.js';
  */
 export const parseMessage = (rawText, timezoneOffsetMinutes = 0) => {
     if (!rawText || typeof rawText !== 'string') {
+        logger.error({ rawText }, 'Invalid or missing raw text input received in parser');
         throw new Error('Raw text is required for parsing');
     }
 
+    logger.trace({ rawText, timezoneOffsetMinutes }, 'Local regex parsing triggered');
     const normalized = rawText.toLowerCase().trim();
 
     // 1. Detect Entry Type using robust word boundary regexes
@@ -27,15 +30,19 @@ export const parseMessage = (rawText, timezoneOffsetMinutes = 0) => {
     } else if (saveDayPattern.test(normalized)) {
         type = 'save_day';
     }
+    logger.trace({ rawText, type }, 'Local resolver determined entry type');
 
     // 2. Extract Amount (only for expenses and savings)
     const amount = (type === 'expense' || type === 'save_day') ? extractAmount(normalized) : null;
+    logger.trace({ rawText, amount }, 'Local resolver extracted amount');
 
     // 3. Extract Category
     const category = extractCategory(normalized);
+    logger.trace({ rawText, category }, 'Local resolver extracted category');
 
     // 4. Resolve Date & Explicitness
     const { date: expenseDate, explicit: isExplicitDate } = parseExpenseDate(normalized, timezoneOffsetMinutes);
+    logger.trace({ rawText, expenseDate, isExplicitDate }, 'Local resolver resolved expense date');
 
     // 5. Determine Confidence Level
     // - HIGH: Direct button actions, or both amount and date are explicitly mentioned
@@ -47,8 +54,8 @@ export const parseMessage = (rawText, timezoneOffsetMinutes = 0) => {
     } else if (amount !== null) {
         confidenceLevel = isExplicitDate ? 'high' : 'medium';
     }
-
-    return {
+    
+    const parsedOutput = {
         rawText,
         type,
         amount,
@@ -56,6 +63,10 @@ export const parseMessage = (rawText, timezoneOffsetMinutes = 0) => {
         expenseDate,
         confidenceLevel
     };
+
+    logger.debug({ rawText, parsedResult: parsedOutput }, 'Local regex parsing successfully completed');
+    return parsedOutput;
 };
 
 export default parseMessage;
+
