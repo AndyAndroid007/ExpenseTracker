@@ -16,6 +16,12 @@ export const fallbackParseWithLLM = async (rawText, regexParse, localDateContext
         return null;
     }
 
+    // Proactive Data Minimization: Truncate raw input to 100 characters max before sending to LLM
+    const safeRawText = typeof rawText === 'string' 
+        ? rawText.trim().slice(0, 100) 
+        : '';
+
+
     logger.debug({ rawText, regexParse }, 'Triggering Gemini LLM fallback parsing');
 
     try {
@@ -71,7 +77,7 @@ ${JSON.stringify(regexParse)}
 </regex_failed_output>
 
 <user_raw_message>
-${rawText}
+${safeRawText}
 </user_raw_message>
 `;
 
@@ -112,3 +118,78 @@ ${rawText}
     }
 };
 export default fallbackParseWithLLM;
+
+/**
+ * Generates dynamic, highly personalized financial insights using Gemini LLM.
+ * 
+ * @param {object} aggregatedData - Aggregated financial metrics
+ * @returns {Promise<string[]|null>} Array of 3 insight text strings or null on failure
+ */
+export const generateInsightsWithLLM = async (aggregatedData) => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        logger.warn('GEMINI_API_KEY is not configured. Skipping LLM insights.');
+        return null;
+    }
+
+    logger.debug({ aggregatedData }, 'Generating period dynamic insights via Gemini LLM');
+
+    try {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({
+            model: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
+            generationConfig: {
+                responseMimeType: 'application/json'
+            }
+        });
+
+        const prompt = `
+<system_instruction>
+You are an encouraging, witty, and practical personal finance coach. 
+Your sole task is to analyze the provided aggregated spending and habit statistics of a user for a specific period and generate exactly 3 highly personalized, practical insight statements.
+
+Guidelines:
+1. Generate exactly 3 bullet-point insights returned as a JSON array of strings.
+2. Be conversational, direct, and slightly humorous (e.g., use fitting emojis like 🔥, 💰, 🚨).
+3. Do NOT mention mechanical terms like "aggregated data", "JSON", "the model", "period boundaries", or "database". Talk directly to the user as their coach.
+4. Keep each insight concise (under 15 words) and highly actionable.
+5. Focus on:
+   - Celebrating their "no-spend" days or "save-days" (if they have them).
+   - Pointing out their top category leak and what it represents.
+   - Giving a practical, encouraging tip to do better next time.
+
+Your output MUST be a valid JSON array of strings matching this exact schema:
+[
+  "Insight 1 text with emoji",
+  "Insight 2 text with emoji",
+  "Insight 3 text with emoji"
+]
+</system_instruction>
+
+<user_spending_summary>
+${JSON.stringify(aggregatedData, null, 2)}
+</user_spending_summary>
+`;
+
+        logger.trace({ prompt }, 'Gemini insights prompt generated');
+
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text();
+        
+        logger.trace({ responseText }, 'Gemini insights raw response received');
+
+        const cleanedResponse = JSON.parse(responseText.trim());
+
+        if (Array.isArray(cleanedResponse) && cleanedResponse.length === 3) {
+            logger.info('Gemini successfully generated 3 personalized insights');
+            return cleanedResponse;
+        }
+
+        logger.warn({ cleanedResponse }, 'Gemini returned invalid format for insights list');
+        return null;
+    } catch (error) {
+        logger.error({ error }, 'Error during Gemini LLM insights generation');
+        return null;
+    }
+};
+
