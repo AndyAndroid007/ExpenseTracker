@@ -72,22 +72,28 @@ export default function ChatTab() {
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-      background: 'var(--color-bg)',
-    }}>
-      <div style={{
-        flex: 1,
+    <div 
+      className="flex flex-col h-full bg-bg"
+      /* style={{
         display: 'flex',
         flexDirection: 'column',
-        minHeight: 0,
-        width: '100%',
-        maxWidth: '720px',
-        margin: '0 auto',
-        padding: '0 clamp(0.75rem, 3vw, 1.5rem)',
-      }}>
+        height: '100%',
+        background: 'var(--color-bg)',
+      }} */
+    >
+      <div 
+        className="flex-1 flex flex-col min-h-0 w-full max-w-[720px] mx-auto px-lg"
+        /* style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          width: '100%',
+          maxWidth: '720px',
+          margin: '0 auto',
+          padding: '0 clamp(0.75rem, 3vw, 1.5rem)',
+        }} */
+      >
         <MessageThread messages={messages} onConfirm={handleConfirm} onEdit={handleEdit} />
       </div>
       <InputBar onSend={handleSend} />
