@@ -97,4 +97,11 @@
   --spacing-md: var(--space-md);
   --spacing-lg: var(--space-lg);
   --spacing-xl: var(--space-xl);
+
+  --color-separator: var(--color-separator);
+  --color-surface: var(--color-surface);
+  --color-label-primary: var(--color-label-primary);
+  --color-label-secondary: var(--color-label-secondary);
+  --color-label-tertiary: var(--color-label-tertiary);
+  
 }

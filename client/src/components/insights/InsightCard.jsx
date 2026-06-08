@@ -18,37 +18,47 @@ export default function InsightCard({ text, accent = 'blue', icon }) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
 
   return (
-    <div style={{
-      background: 'var(--color-surface)',
-      border: '0.5px solid var(--color-separator)',
-      borderRadius: '14px',
-      padding: '14px 16px',
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: '14px',
-    }}>
+    <div 
+    // style={{
+    //   background: 'var(--color-surface)',
+    //   border: '0.5px solid var(--color-separator)',
+    //   borderRadius: '14px',
+    //   padding: '14px 16px',
+    //   display: 'flex',
+    //   alignItems: 'flex-start',
+    //   gap: '14px',
+    // }}
+    className="bg-surface border-[0.5px] border-separator rounded-[14px] px-[14px] py-4 flex items-start gap-[14px]"
+    >
       {Icon && (
-        <div style={{
-          width: '38px',
-          height: '38px',
-          borderRadius: '10px',
-          background: iconBg,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          marginTop: '1px',
-        }}>
+        <div 
+        // style={{
+        //   width: '38px',
+        //   height: '38px',
+        //   borderRadius: '10px',
+        //   background: iconBg,
+        //   display: 'flex',
+        //   alignItems: 'center',
+        //   justifyContent: 'center',
+        //   flexShrink: 0,
+        //   marginTop: '1px',
+        // }}
+        className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 mt-[2px]"
+        style = {{ backgroundColor: iconBg }}
+        >
           <Icon size={18} strokeWidth={2} color={iconColor} />
         </div>
       )}
-      <p style={{
-        fontSize: '0.875rem',
-        lineHeight: 1.55,
-        color: 'var(--color-label-secondary)',
-        margin: 0,
-        paddingTop: '2px',
-      }}>
+      <p 
+      // style={{
+      //   fontSize: '0.875rem',
+      //   lineHeight: 1.55,
+      //   color: 'var(--color-label-secondary)',
+      //   margin: 0,
+      //   paddingTop: '2px',
+      // }}
+      className="text-sm leading-[1.55] text-label-secondary m-0 pt-0.5"
+      >
         {parts.map((part, i) => {
           if (part.startsWith('**') && part.endsWith('**')) {
             return (
