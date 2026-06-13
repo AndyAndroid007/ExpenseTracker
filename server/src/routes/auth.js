@@ -9,5 +9,6 @@ const router = express.Router();
 router.post('/anonymous', authController.anonymousLogin);
 router.post('/login', validate(loginSchema), authController.login);
 router.post('/register', optionalAuth, validate(registerSchema), authController.register);
+router.post('/logout', authController.logout);
 
 export default router;

@@ -33,7 +33,8 @@ export const login = async ({ email, password }) => {
         user: {
             id: user.id,
             name: user.name,
-            email: user.email
+            email: user.email,
+            isAnonymous: false
         }
     }
 };
@@ -83,22 +84,39 @@ export const register = async ({ userId = null, name, email, password }) => {
     }
 };
 
-export const anonymousLogin = async () => {
-    logger.trace('Service anonymousLogin triggered, generating guest profile');
-    const newUser = await userService.createUser();
-    logger.debug({ userId: newUser.id }, 'Anonymous guest profile generated successfully, signing guest JWT session token');
+export const anonymousLogin = async (guestUserId = null) => {
+    logger.trace({ guestUserId }, 'Service anonymousLogin triggered, generating guest profile');
+    let targetUser = null;
+    if (guestUserId) {
+        try {
+            const user = await userService.getUserById(guestUserId);
+            if (user && user.email === null) {
+                targetUser = user;
+                logger.info({ userId: targetUser.id }, 'Reusing existing anonymous guest user profile');
+            }
+        } catch (err) {
+            logger.warn({ guestUserId, err }, 'Failed to retrieve guest user to reuse, creating a new user');
+        }
+    }
+
+    if (!targetUser) {
+        targetUser = await userService.createUser();
+        logger.debug({ userId: targetUser.id }, 'New anonymous guest profile generated successfully');
+    }
+
+    logger.debug({ userId: targetUser.id }, 'Signing guest JWT session token');
     
     const token = jwt.sign({
-        userId: newUser.id,
+        userId: targetUser.id,
         isAnonymous: true,
     }, process.env.JWT_SECRET,
         { expiresIn: process.env.anonymous_expires_in || '60d' })
 
-    logger.info({ userId: newUser.id }, 'Guest JWT token generated successfully for anonymous session');
+    logger.info({ userId: targetUser.id }, 'Guest JWT token generated successfully for anonymous session');
     return {
         token,
         user: {
-            id: newUser.id,
+            id: targetUser.id,
             isAnonymous: true
         }
     }

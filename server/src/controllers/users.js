@@ -45,3 +45,14 @@ export const createUser = async (req, res, next) => {
         next(err);
     }
 }
+
+export const getMe = async (req, res, next) => {
+    try {
+        const { password, ...sanitizedUser } = req.user;
+        sanitizedUser.isAnonymous = req.user.email === null;
+        logger.info({ userId: req.user.id }, 'Successfully retrieved current user profile');
+        res.status(200).json({ user: sanitizedUser });
+    } catch (err) {
+        next(err);
+    }
+};

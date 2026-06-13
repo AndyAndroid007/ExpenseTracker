@@ -45,8 +45,9 @@ export const register = async (req, res, next) => {
 
 export const anonymousLogin = async (req, res, next) => {
     try {
-        logger.info('Anonymous guest login request entered controller');
-        const {token, user} = await authService.anonymousLogin();
+        const { guestUserId } = req.body;
+        logger.info({ guestUserId }, 'Anonymous guest login request entered controller');
+        const {token, user} = await authService.anonymousLogin(guestUserId);
         
         res.cookie('token', token, {
             httpOnly: true,
@@ -60,5 +61,20 @@ export const anonymousLogin = async (req, res, next) => {
     } catch (err) {
         logger.error({ err }, 'Failed anonymous guest login in controller');
         next(err);  
+    }
+};
+
+export const logout = async (req, res, next) => {
+    try {
+        res.clearCookie('token', {
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production'
+        });
+        logger.info('User session cookie cleared on logout');
+        return res.status(200).json({ message: 'Logged out successfully' });
+    } catch (err) {
+        logger.error({ err }, 'Failed to clear user cookie on logout');
+        next(err);
     }
 };
