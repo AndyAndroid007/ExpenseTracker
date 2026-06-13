@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import MaskedAmount from '../MaskedAmount';
+import EditCardForm from './EditCardForm';
 
 // const categoryColors = {
 //   Food: { bg: '#fff3e0', color: '#e65100' },
@@ -20,14 +22,29 @@ const categoryClasses = {
   General: 'bg-gray-100 text-gray-700 border border-gray-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700/50',
 };
 
-export default function ConfirmCard({ parsed, onConfirm, onEdit }) {
-  const { amount, category, dateLabel, confidence } = parsed;
-  // const cat = categoryColors[category] || categoryColors.General;
-  const catClass = categoryClasses[category] || categoryClasses.General;
+export default function ConfirmCard({ parsed, onConfirm }) {
+  const [isEditing, setIsEditing] = useState(false);
+
+  if (isEditing) {
+    return (
+      <EditCardForm
+        parsed={parsed}
+        onSave={(updated) => {
+          setIsEditing(false);
+          // EditCardForm already called PATCH — pass alreadyPatched=true
+          onConfirm(updated, true);
+        }}
+        onCancel={() => setIsEditing(false)}
+      />
+    );
+  }
+
+  // const cat = categoryColors[parsed.category] || categoryColors.General;
+  const catClass = categoryClasses[parsed.category] || categoryClasses.General;
 
   return (
     <div
-      className="rounded-xl p-3 bg-surface border-[0.5px] border-[var(--color-separator)] shadow-sm dark:shadow-[0_4px_12px_rgba(0,0,0,0.3)] flex flex-col gap-2.5 max-w-[280px]"
+      className="rounded-xl p-3 bg-surface border-[0.5px] border-[var(--color-separator)] shadow-sm dark:shadow-[0_4px_12px_rgba(0,0,0,0.3)] flex flex-col gap-2.5 max-w-[280px] animate-fadeIn"
       // style={{ background: 'var(--color-surface)', border: '0.5px solid var(--color-separator)' }}
     >
       <div className="flex items-center gap-2">
@@ -35,32 +52,32 @@ export default function ConfirmCard({ parsed, onConfirm, onEdit }) {
           className="text-xl font-bold text-primary"
           // style={{ color: 'var(--color-primary)' }}
         >
-          <MaskedAmount amount={amount} />
+          <MaskedAmount amount={parsed.amount} />
         </span>
         <span
           className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${catClass}`}
           // style={{ background: cat.bg, color: cat.color }}
         >
-          {category}
+          {parsed.category}
         </span>
       </div>
       <p 
         className="text-[10px] text-label-tertiary"
         // style={{ color: 'var(--color-label-tertiary)' }}
       >
-        {dateLabel} · confidence: {confidence}
+        {parsed.dateLabel} · Confidence: {parsed.confidence}
       </p>
       <div className="flex gap-2">
         <button
-          onClick={onConfirm}
-          className="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white border-none cursor-pointer hover:opacity-90"
+          onClick={() => onConfirm(parsed, false)}
+          className="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white border-none cursor-pointer hover:opacity-90 transition-all"
           // style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', cursor: 'pointer' }}
         >
           Confirm
         </button>
         <button
-          onClick={onEdit}
-          className="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-bg text-label-secondary border border-[var(--color-separator)] cursor-pointer hover:bg-surface"
+          onClick={() => setIsEditing(true)}
+          className="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-bg text-label-secondary border border-[var(--color-separator)] cursor-pointer hover:bg-surface transition-all"
           // style={{ background: 'var(--color-bg)', color: 'var(--color-label-secondary)', border: '1px solid var(--color-separator)', cursor: 'pointer' }}
         >
           Edit

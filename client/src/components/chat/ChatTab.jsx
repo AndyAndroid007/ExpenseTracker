@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import MessageThread from './MessageThread';
 import InputBar from './InputBar';
-import { parseInput } from '../../utils/parser';
+import api from '../../utils/api';
+import logger from '../../utils/logger';
+import { AuthContext } from '../../context/AuthContext';
 
 const WELCOME = [
   {
@@ -10,65 +12,135 @@ const WELCOME = [
   },
 ];
 
+const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s;
+
+const mapDbMessageToFrontend = (msg) => {
+  // A confirmed card is rendered directly as its resolved plain text
+  if (msg.type === 'confirm_card' && msg.isConfirmed) {
+    const amount = msg.payload?.amount ?? '?';
+    const category = msg.payload?.category ?? '?';
+    return {
+      sender: 'system',
+      text: `✅ Logged ₹${amount} for ${category}.`,
+      type: 'text'
+    };
+  }
+  if (msg.type === 'confirm_card') {
+    return {
+      sender: msg.sender,
+      text: msg.text,
+      type: msg.type,
+      parsed: msg.payload ? {
+        id: msg.payload.id,
+        amount: Number(msg.payload.amount),
+        category: msg.payload.category,
+        dateLabel: 'Today',
+        confidence: capitalize(msg.payload.confidence),
+        streak: msg.payload.streak
+      } : null
+    };
+  }
+  if (msg.type === 'streak') {
+    return {
+      sender: msg.sender,
+      text: msg.text,
+      type: msg.type,
+      days: msg.payload ? msg.payload.days : 0
+    };
+  }
+  return {
+    sender: msg.sender,
+    text: msg.text,
+    type: msg.type
+  };
+};
+
 export default function ChatTab() {
   const [messages, setMessages] = useState(WELCOME);
+  const { setCurrentStreak } = useContext(AuthContext);
+
+  useEffect(() => {
+    async function loadChatHistory() {
+      try {
+        logger.info('Fetching chat history from server...');
+        const res = await api.get('/chat');
+        const dbMessages = res.data || [];
+        if (dbMessages.length > 0) {
+          setMessages(dbMessages.map(mapDbMessageToFrontend));
+        }
+        logger.info({ count: dbMessages.length }, 'Successfully loaded chat history');
+      } catch (err) {
+        logger.error({ err }, 'Failed to load chat history, falling back to welcome message');
+      }
+    }
+    loadChatHistory();
+  }, []);
 
   function addMessage(msg) {
     setMessages(prev => [...prev, msg]);
   }
 
-  function handleSend(text) {
+  async function handleSend(text) {
     if (!text.trim()) return;
-    addMessage({ sender: 'user', text });
+    
+    // Add user message optimistically
+    addMessage({ sender: 'user', text, type: 'text' });
 
-    const parsed = parseInput(text);
+    try {
+      logger.info({ rawText: text }, 'Posting raw text to server...');
+      const response = await api.post('/entries', { rawText: text });
+      const { streak, chatMessages } = response.data;
 
-    if (parsed.type === 'no_spend') {
-      setTimeout(() => {
-        addMessage({ sender: 'system', text: "✅ Got it — no spend today! Great job keeping it zero." });
-        addMessage({ type: 'streak', days: 7 });
-      }, 300);
-      return;
+      logger.info('Entry created and chat messages received successfully');
+
+      if (streak) {
+        setCurrentStreak(streak.current_streak);
+      }
+
+      if (chatMessages && chatMessages.length > 0) {
+        // Filter out the user message since we already added it optimistically
+        const mapped = chatMessages.map(mapDbMessageToFrontend);
+        const systemReplies = mapped.filter(m => m.sender === 'system');
+        setMessages(prev => [...prev, ...systemReplies]);
+      }
+    } catch (err) {
+      logger.error({ err }, 'Failed to parse or save entry on backend');
+      const errorMsg = err.response?.data?.message || "Hmm, I couldn't catch that. Try: 'Spent 200 on food' or 'no spend today'.";
+      addMessage({ sender: 'system', text: errorMsg, type: 'text' });
     }
-
-    if (parsed.type === 'save_day') {
-      setTimeout(() => {
-        addMessage({ sender: 'system', text: "🎉 Marked as a saving day! Keep it up." });
-        addMessage({ type: 'streak', days: 7 });
-      }, 300);
-      return;
-    }
-
-    if (parsed.type === 'expense' && parsed.amount) {
-      setTimeout(() => {
-        addMessage({ type: 'confirm_card', parsed });
-      }, 300);
-      return;
-    }
-
-    setTimeout(() => {
-      addMessage({ sender: 'system', text: "Hmm, I couldn't catch that. Try something like 'Swiggy 280' or 'no spend today'." });
-    }, 300);
   }
 
-  function handleConfirm(idx) {
-    const confirmed = messages[idx];
-    setMessages(prev => {
-      const next = [...prev];
-      next[idx] = { sender: 'system', text: `✅ Logged ₹${confirmed.parsed.amount} for ${confirmed.parsed.category}.` };
-      return next;
-    });
-    setTimeout(() => {
-      setMessages(prev => [...prev, { type: 'streak', days: 7 }]);
-    }, 100);
-  }
+  async function handleConfirm(idx, updatedParsed, alreadyPatched = false) {
+    const confirmed = updatedParsed || messages[idx].parsed;
 
-  function handleEdit(idx) {
+    // If user hit the direct Confirm button (not coming from EditCardForm's Save),
+    // we need to PATCH the backend to mark the message as confirmed.
+    if (!alreadyPatched && confirmed?.id) {
+      try {
+        logger.info({ entryId: confirmed.id }, 'Direct confirm — calling PATCH to persist confirmation');
+        await api.patch(`/entries/${confirmed.id}`, {
+          amount: confirmed.amount,
+          category: confirmed.category
+        });
+      } catch (err) {
+        logger.error({ err }, 'Failed to persist direct confirm via PATCH');
+      }
+    }
+
     setMessages(prev => {
       const next = [...prev];
-      next[idx] = { sender: 'system', text: "No problem! Just retype the expense with the correct details." };
+      next[idx] = { sender: 'system', text: `✅ Logged ₹${confirmed.amount} for ${confirmed.category}.`, type: 'text' };
       return next;
     });
+
+    if (confirmed.streak) {
+      setCurrentStreak(confirmed.streak.current_streak);
+      if (confirmed.streak.updated) {
+        setTimeout(() => {
+          setMessages(prev => [...prev, { type: 'streak', days: confirmed.streak.current_streak }]);
+        }, 100);
+      }
+    }
   }
 
   return (
@@ -94,7 +166,7 @@ export default function ChatTab() {
           padding: '0 clamp(0.75rem, 3vw, 1.5rem)',
         }} */
       >
-        <MessageThread messages={messages} onConfirm={handleConfirm} onEdit={handleEdit} />
+        <MessageThread messages={messages} onConfirm={handleConfirm} />
       </div>
       <InputBar onSend={handleSend} />
     </div>

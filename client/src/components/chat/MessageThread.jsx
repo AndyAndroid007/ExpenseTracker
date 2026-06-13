@@ -28,7 +28,7 @@ export default function MessageThread({ messages, onConfirm, onEdit }) {
               className="max-w-[80%] self-start"
               // style={{ maxWidth: '80%', alignSelf: 'flex-start' }}
             >
-              <ConfirmCard parsed={msg.parsed} onConfirm={() => onConfirm(i)} onEdit={() => onEdit(i)} />
+              <ConfirmCard parsed={msg.parsed} onConfirm={(updated, alreadyPatched) => onConfirm(i, updated, alreadyPatched)} />
             </div>
           );
         }
