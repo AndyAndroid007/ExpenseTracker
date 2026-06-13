@@ -5,10 +5,11 @@ export const postEntry = async (req, res, next) => {
     try {
         const userId = req.user.id;
         const timezoneOffsetMinutes = req.headers['x-timezone-offset-minutes'] || 0;
+        const ianaTimezone = req.headers['x-timezone'] || null;
         
-        logger.info({ userId, timezoneOffsetMinutes }, 'Incoming request to create a new expense entry');
+        logger.info({ userId, timezoneOffsetMinutes, ianaTimezone }, 'Incoming request to create a new expense entry');
         
-        const userEntry = await entryService.postEntry(userId, req.body.rawText, timezoneOffsetMinutes);
+        const userEntry = await entryService.postEntry(userId, req.body.rawText, timezoneOffsetMinutes, ianaTimezone);
 
         logger.info({ userId, entryId: userEntry.entry.id }, 'Successfully created and confirmed entry');
         res.status(201).json(userEntry);

@@ -1,6 +1,8 @@
 import * as insightsRepository from '../repositories/insights.js';
 import { getTodayInUserZone, toIsoDate } from '../utils/dates.js';
 import { generateInsightsWithLLM } from './llm.js';
+import redis from '../streak-engine/startUp.js';
+import logger from '../utils/logger.js';
 
 
 /**
@@ -40,6 +42,17 @@ const calculateDateBoundaries = (period, timezoneOffsetMinutes) => {
 };
 
 export const getInsightsByPeriod = async (userId, period, timezoneOffsetMinutes = 0) => {
+    const cacheKey = `insights:${userId}:${period}`;
+    try {
+        const cachedData = await redis.get(cacheKey);
+        if (cachedData) {
+            logger.info({ userId, period }, 'Insights cache hit. Read successfully from Redis');
+            return JSON.parse(cachedData);
+        }
+    } catch (err) {
+        logger.error({ err, userId, period }, 'Failed to read insights from Redis cache');
+    }
+
     // 1. Calculate boundaries
     const { from, to } = calculateDateBoundaries(period, timezoneOffsetMinutes);
 
@@ -102,7 +115,7 @@ export const getInsightsByPeriod = async (userId, period, timezoneOffsetMinutes 
         }
     }
 
-    return {
+    const result = {
         period,
         start_date: from,
         end_date: to,
@@ -114,4 +127,14 @@ export const getInsightsByPeriod = async (userId, period, timezoneOffsetMinutes 
         insights,
         data_confidence: dataConfidence
     };
+
+    try {
+        // Cache insights for 24 hours
+        await redis.set(cacheKey, JSON.stringify(result), { EX: 86400 });
+        logger.info({ userId, period }, 'Successfully saved generated insights to Redis cache');
+    } catch (err) {
+        logger.error({ err, userId, period }, 'Failed to save insights to Redis cache');
+    }
+
+    return result;
 };

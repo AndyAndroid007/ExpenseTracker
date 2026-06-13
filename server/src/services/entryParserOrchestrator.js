@@ -11,7 +11,7 @@ import logger from '../utils/logger.js';
  * @param {number} timezoneOffsetMinutes - Timezone offset in minutes
  * @returns {Promise<object>} Final parsing result (guaranteed to return a valid object)
  */
-export const parseEntry = async (rawText, timezoneOffsetMinutes = 0) => {
+export const parseEntry = async (rawText, timezoneOffsetMinutes = 0, ianaTimezone = null) => {
     // 1. First run the ultra-fast, local regex parser
     const regexResult = parseMessage(rawText, timezoneOffsetMinutes);
     logger.debug({ regexResult, rawText }, 'Local regex parsing complete');
@@ -22,7 +22,7 @@ export const parseEntry = async (rawText, timezoneOffsetMinutes = 0) => {
         const localDateContext = getLocalDateString(timezoneOffsetMinutes, 0);
         
         try {
-            const llmResult = await fallbackParseWithLLM(rawText, regexResult, localDateContext);
+            const llmResult = await fallbackParseWithLLM(rawText, regexResult, localDateContext, ianaTimezone);
             
             // If the LLM successfully resolved and structured the text, return it
             if (llmResult) {
