@@ -15,18 +15,28 @@ export default function EntryRow({ entry, isLast }) {
 
   if (entry.nospend) {
     return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '13px 16px',
-        background: 'var(--color-surface)',
-      }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-          <span style={{ fontSize: '0.9375rem', fontWeight: 500, color: 'var(--color-label-primary)' }}>
+      <div 
+      // style={{
+      //   display: 'flex',
+      //   alignItems: 'center',
+      //   justifyContent: 'space-between',
+      //   padding: '13px 16px',
+      //   background: 'var(--color-surface)',
+      // }}
+      className="flex items-center justify-between px-3 py-4 bg-surface"
+      >
+        <div 
+        // style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}
+        className="flex flex-col gap-0.75"
+        >
+          <span 
+          // style={{ fontSize: '0.9375rem', fontWeight: 500, color: 'var(--color-label-primary)' }}
+          className="text-[0.9375rem] font-medium text-label-primary"
+          >
             No-spend day
           </span>
-          <span style={{
+          <span 
+          style={{
             display: 'inline-flex',
             alignItems: 'center',
             alignSelf: 'flex-start',
@@ -37,7 +47,9 @@ export default function EntryRow({ entry, isLast }) {
             background: '#f0faf5',
             color: '#1a7a4a',
             border: '0.5px solid #a8d5b8',
-          }}>
+          }}
+          // className="inline-flex items-center self-start text-[11px] font-medium px-2 py-1 rounded-full bg-green-light text-green border-[] border-green"
+          >
             No spend
           </span>
         </div>
