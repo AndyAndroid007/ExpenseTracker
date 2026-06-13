@@ -1,36 +1,22 @@
 import EntryRow from './EntryRow';
 
-const DATA = [
-  {
-    dateLabel: 'Today',
-    dateSub: 'May 31',
-    entries: [
-      { title: 'Swiggy', category: 'Food', amount: 280 },
-      { nospend: true },
-    ],
-  },
-  {
-    dateLabel: 'Thursday',
-    dateSub: 'May 29',
-    entries: [
-      { title: 'Uber', category: 'Transport', amount: 340 },
-      { title: 'Zomato', category: 'Food', amount: 420 },
-    ],
-  },
-  {
-    dateLabel: 'Wednesday',
-    dateSub: 'May 28',
-    entries: [
-      { title: 'Electricity bill', category: 'Bills', amount: 920 },
-      { saveday: true },
-    ],
-  },
-];
+export default function EntryList({ groups = [] }) {
+  if (groups.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 bg-surface rounded-[14px] border-[0.5px] border-separator text-center">
+        <span className="text-3xl mb-2">📥</span>
+        <p className="text-sm font-semibold text-label-primary">No entries found</p>
+        <p className="text-xs text-label-tertiary mt-1">Try logging an expense in the Chat tab!</p>
+      </div>
+    );
+  }
 
-export default function EntryList() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {DATA.map(group => (
+    <div
+      /* style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} */
+      className="flex flex-col gap-5"
+    >
+      {groups.map(group => (
         <div key={group.dateSub}>
           {/* Date header */}
           <div 
@@ -76,11 +62,11 @@ export default function EntryList() {
           //   flexDirection: 'column',
           //   gap: '0.5px',
           // }}
-          className="bg-separator rounded-[14px] overflow-hidden border border-separator flex flex-col gap-0"
+          className="bg-separator rounded-[14px] overflow-hidden border-[0.5px] border-separator flex flex-col gap-[0.5px]"
           >
             {group.entries.map((entry, i) => (
               <EntryRow
-                key={i}
+                key={entry.id || i}
                 entry={entry}
                 isLast={i === group.entries.length - 1}
               />

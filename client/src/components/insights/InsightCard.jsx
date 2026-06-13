@@ -9,9 +9,13 @@ const iconMap = {
 export default function InsightCard({ text, accent = 'blue', icon }) {
   const isViolet = accent === 'violet';
 
-  const iconBg = isViolet ? '#eeecff' : '#e8f1ff';
-  const iconColor = isViolet ? '#5856d6' : '#007aff';
-  const boldColor = isViolet ? '#5856d6' : '#007aff';
+  // const iconBg = isViolet ? '#eeecff' : '#e8f1ff';
+  // const iconColor = isViolet ? '#5856d6' : '#007aff';
+  // const boldColor = isViolet ? '#5856d6' : '#007aff';
+
+  const iconBgClass = isViolet ? 'bg-violet-light' : 'bg-blue-light';
+  const iconColorClass = isViolet ? 'text-accent' : 'text-primary';
+  const boldColorClass = isViolet ? 'text-accent font-semibold' : 'text-primary font-semibold';
 
   const Icon = iconMap[icon];
 
@@ -28,7 +32,7 @@ export default function InsightCard({ text, accent = 'blue', icon }) {
     //   alignItems: 'flex-start',
     //   gap: '14px',
     // }}
-    className="bg-surface border-[0.5px] border-separator rounded-[14px] px-[14px] py-4 flex items-start gap-[14px]"
+    className="bg-surface border-[0.5px] border-separator rounded-[14px] px-4 py-[14px] flex items-start gap-[14px]"
     >
       {Icon && (
         <div 
@@ -43,10 +47,10 @@ export default function InsightCard({ text, accent = 'blue', icon }) {
         //   flexShrink: 0,
         //   marginTop: '1px',
         // }}
-        className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 mt-[2px]"
-        style = {{ backgroundColor: iconBg }}
+        className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 mt-[2px] ${iconBgClass}`}
+        /* style = {{ backgroundColor: iconBg }} */
         >
-          <Icon size={18} strokeWidth={2} color={iconColor} />
+          <Icon size={18} strokeWidth={2} className={iconColorClass} /* color={iconColor} */ />
         </div>
       )}
       <p 
@@ -62,7 +66,11 @@ export default function InsightCard({ text, accent = 'blue', icon }) {
         {parts.map((part, i) => {
           if (part.startsWith('**') && part.endsWith('**')) {
             return (
-              <strong key={i} style={{ color: boldColor, fontWeight: 600 }}>
+              <strong 
+                key={i} 
+                className={boldColorClass}
+                /* style={{ color: boldColor, fontWeight: 600 }} */
+              >
                 {part.slice(2, -2)}
               </strong>
             );

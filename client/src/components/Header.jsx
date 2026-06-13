@@ -1,7 +1,8 @@
 import { useContext } from 'react';
-import { IconEye, IconEyeOff } from '@tabler/icons-react';
+import { IconEye, IconEyeOff, IconSun, IconMoon } from '@tabler/icons-react';
 import { MaskContext } from '../context/MaskContext';
 import { AuthContext } from '../context/AuthContext';
+import { ThemeContext } from '../context/ThemeContext';
 
 const TAB_TITLES = {
   log: 'Log Expense',
@@ -12,7 +13,9 @@ const TAB_TITLES = {
 
 export default function Header({ tab }) {
   const { masked, toggle } = useContext(MaskContext);
-  const { loggedIn } = useContext(AuthContext);
+  const { loggedIn, currentStreak } = useContext(AuthContext);
+  const { theme, setTheme } = useContext(ThemeContext);
+
   return (
     <header
       className="flex items-center justify-between shrink-0 h-11 bg-surface border-b-[0.5px] border-[var(--color-separator)] px-[var(--space-lg)]"
@@ -57,7 +60,7 @@ export default function Header({ tab }) {
 
       <div 
       /* style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }} */
-      className="flex items-center gap-3"
+      className="flex items-center gap-2"
       >
         <div 
         className="flex items-center gap-1 px-2.5 py-[3px] rounded-full bg-orange-50 border border-orange-100 text-[10px] font-semibold text-orange-700 select-none"
@@ -75,7 +78,7 @@ export default function Header({ tab }) {
           userSelect: 'none',
         }} */
         >
-          🔥 <span>7 days</span>
+          🔥 <span>{currentStreak} {currentStreak === 1 ? 'day' : 'days'}</span>
         </div>
         <div 
         /* style={{
@@ -103,6 +106,13 @@ export default function Header({ tab }) {
           {loggedIn ? 'Synced' : 'Local only'}
         </div>
         <button
+          onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+          title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+          className="w-7 h-7 rounded-full bg-bg border-[0.5px] border-[var(--color-separator)] flex items-center justify-center cursor-pointer shrink-0 text-label-tertiary hover:bg-separator/20 focus:outline-none"
+        >
+          {theme === 'light' ? <IconMoon size={16} strokeWidth={1.6} /> : <IconSun size={16} strokeWidth={1.6} />}
+        </button>
+        <button
           onClick={toggle}
           title={masked ? 'Show amounts' : 'Hide amounts'}
           /* style={{
@@ -118,7 +128,7 @@ export default function Header({ tab }) {
             color: 'var(--color-label-tertiary)',
             flexShrink: 0,
           }} */
-          className="w-7 h-7 rounded-full bg-bg border-[0.5px] border-[var(--color-separator)] flex items-center justify-center cursor-pointer shrink-0 text-label-tertiary"
+          className="w-7 h-7 rounded-full bg-bg border-[0.5px] border-[var(--color-separator)] flex items-center justify-center cursor-pointer shrink-0 text-label-tertiary hover:bg-separator/20 focus:outline-none"
         >
           {masked ? <IconEyeOff size={16} strokeWidth={1.6} /> : <IconEye size={16} strokeWidth={1.6} />}
         </button>

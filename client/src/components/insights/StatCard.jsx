@@ -13,7 +13,7 @@ export default function StatCard({ label, value, isAmount, sub, accentColor, sub
       //   flexDirection: 'column',
       //   gap: '4px',
       // }}
-      className="bg-surface border-[0.5px] border-separator rounded-[var(--radius-card)] p-[var(--space-md)] flex flex-col gap-1"
+      className="bg-surface border-[0.5px] border-separator rounded-[var(--radius-card)] p-md flex flex-col gap-1"
     >
       <p
         // style={{ fontSize: '11px', color: 'var(--color-label-tertiary)', fontWeight: 500 }}

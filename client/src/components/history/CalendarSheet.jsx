@@ -61,7 +61,7 @@ export default function CalendarSheet({ onApply, onClose }) {
     if (start) {
       const fmt = (d) => `${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}`;
       const label = end ? `${fmt(start)} – ${fmt(end)}` : fmt(start);
-      onApply(label);
+      onApply(label, start, end);
     }
     onClose();
   }
@@ -78,7 +78,7 @@ export default function CalendarSheet({ onApply, onClose }) {
       //   flexDirection: 'column',
       //   gap: '16px',
       // }}
-      className="p-5 flex flex-col gap-4"
+      className="p-4 flex flex-col gap-3"
     >
       {/* Header */}
       <div
@@ -87,7 +87,7 @@ export default function CalendarSheet({ onApply, onClose }) {
       >
         <p
           // style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-label-primary)', margin: 0 }}
-          className="text-[1rem] font-semibold text-label-primary m-0"
+          className="text-sm font-semibold text-label-primary m-0"
         >
           Pick a range
         </p>
@@ -100,9 +100,9 @@ export default function CalendarSheet({ onApply, onClose }) {
           //   display: 'flex', alignItems: 'center', justifyContent: 'center',
           //   cursor: 'pointer', color: 'var(--color-label-tertiary)',
           // }}
-          className="w-[30px] h-[30px] rounded-full bg-bg border border-separator flex items-center justify-center cursor-pointer text-label-tertiary"
+          className="w-7 h-7 rounded-full bg-bg border border-separator flex items-center justify-center cursor-pointer text-label-tertiary outline-none focus:outline-none hover:bg-separator/20"
         >
-          <IconX size={15} strokeWidth={2} />
+          <IconX size={14} strokeWidth={2} />
         </button>
       </div>
 
@@ -113,21 +113,35 @@ export default function CalendarSheet({ onApply, onClose }) {
       >
         <button onClick={prevMonth}
           // style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-label-secondary)', padding: '4px' }}
-          className="bg-transparent border-0 cursor-pointer text-label-secondary p-1"
+          className="bg-transparent border-0 cursor-pointer text-label-secondary p-1 outline-none focus:outline-none hover:text-label-primary"
         >
-          <IconChevronLeft size={18} />
+          <IconChevronLeft size={16} />
         </button>
-        <span
-          // style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-label-primary)' }}
-          className="text-[0.9375rem] font-semibold text-label-primary"
-        >
-          {MONTHS[month]} {year}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <select
+            value={month}
+            onChange={e => setMonth(parseInt(e.target.value, 10))}
+            className="bg-bg border-[0.5px] border-separator rounded-lg px-1.5 py-0.5 text-xs font-semibold text-label-primary outline-none cursor-pointer focus:border-primary"
+          >
+            {MONTHS.map((m, idx) => (
+              <option key={m} value={idx}>{m}</option>
+            ))}
+          </select>
+          <select
+            value={year}
+            onChange={e => setYear(parseInt(e.target.value, 10))}
+            className="bg-bg border-[0.5px] border-separator rounded-lg px-1.5 py-0.5 text-xs font-semibold text-label-primary outline-none cursor-pointer focus:border-primary"
+          >
+            {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - 5 + i).map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
         <button onClick={nextMonth}
           // style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-label-secondary)', padding: '4px' }}
-          className="bg-none border-none cursor-pointer text-label-secondary p-1"
+          className="bg-transparent border-0 cursor-pointer text-label-secondary p-1 outline-none focus:outline-none hover:text-label-primary"
         >
-          <IconChevronRight size={18} />
+          <IconChevronRight size={16} />
         </button>
       </div>
 
@@ -139,7 +153,7 @@ export default function CalendarSheet({ onApply, onClose }) {
         {DAYS.map(d => (
           <div key={d}
             // style={{ textAlign: 'center', fontSize: '11px', fontWeight: 600, color: 'var(--color-label-tertiary)', padding: '4px 0' }}
-            className="text-center text-[11px] font-semibold text-label-tertiary p-1"
+            className="text-center text-[10px] font-semibold text-label-tertiary p-0.5"
           >
             {d}
           </div>
@@ -160,7 +174,7 @@ export default function CalendarSheet({ onApply, onClose }) {
             <button
               key={i}
               onClick={() => selectDay(d)}
-              style={{
+              /* style={{
                 aspectRatio: '1',
                 borderRadius: '50%',
                 border: tod && !selected ? '1.5px solid var(--color-primary)' : 'none',
@@ -173,8 +187,14 @@ export default function CalendarSheet({ onApply, onClose }) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontFamily: 'inherit',
-              }}
-              
+              }} */
+              className={`aspect-square rounded-full cursor-pointer text-xs flex items-center justify-center font-inherit outline-none focus:outline-none ${
+                tod && !selected ? 'border-[1.5px] border-primary' : 'border-0 border-transparent'
+              } ${
+                selected ? 'bg-primary text-white' : ranged ? 'bg-blue-light text-primary' : tod ? 'bg-transparent text-primary' : 'bg-transparent text-label-primary'
+              } ${
+                selected || tod ? 'font-semibold' : 'font-normal'
+              }`}
             >
               {d}
             </button>
@@ -194,19 +214,19 @@ export default function CalendarSheet({ onApply, onClose }) {
           //   background: 'var(--color-bg)', color: 'var(--color-label-secondary)',
           //   border: '0.5px solid var(--color-separator)', cursor: 'pointer', fontFamily: 'inherit',
           // }}
-          className="flex-1 p-[10px] rounded-[10px] text-[0.9375rem] font-semibold bg-bg text-label-secondary border border-separator cursor-pointer font-inherit"
+          className="flex-1 p-[8px] rounded-[8px] text-xs font-semibold bg-bg text-label-secondary border border-separator cursor-pointer font-inherit outline-none focus:outline-none hover:bg-separator/20"
         >
           Cancel
         </button>
         <button
           onClick={handleApply}
-          style={{
+          /* style={{
             flex: 1, padding: '10px', borderRadius: '10px', fontSize: '0.9375rem', fontWeight: 600,
             background: 'var(--color-primary)', color: '#fff',
             border: 'none', cursor: 'pointer', fontFamily: 'inherit',
             opacity: start ? 1 : 0.5,
-          }}
-          // className="flex-1 p-[10px] rounded-[10px] text-[0.9375rem] font-semibold bg-primary text-white border-none cursor-pointer disabled:opacity-50"
+          }} */
+          className="flex-1 p-[8px] rounded-[8px] text-xs font-semibold bg-primary text-white border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed font-inherit outline-none focus:outline-none hover:opacity-95"
           disabled={!start}
         >
           Apply
@@ -218,7 +238,7 @@ export default function CalendarSheet({ onApply, onClose }) {
   const backdrop = (
     <div
       onClick={onClose}
-      style={{
+      /* style={{
         position: 'fixed', inset: 0,
         background: 'rgba(0,0,0,0.35)',
         zIndex: 100,
@@ -226,8 +246,8 @@ export default function CalendarSheet({ onApply, onClose }) {
         alignItems: isNarrow ? 'flex-end' : 'center',
         justifyContent: 'center',
         padding: isNarrow ? 0 : '1rem',
-      }}
-      // className={`fixed inset-0 bg-[rgba(0,0,0,0.35)] z-[100] flex ${isNarrow ? 'items-end' : 'items-center'} justify-center ${isNarrow ? 'p-0' : 'p-4'}`}
+      }} */
+      className={`fixed inset-0 bg-black/35 z-[100] flex ${isNarrow ? 'items-end' : 'items-center'} justify-center ${isNarrow ? 'p-0' : 'p-4'}`}
     >
       <div
         onClick={e => e.stopPropagation()}
@@ -239,7 +259,7 @@ export default function CalendarSheet({ onApply, onClose }) {
         //   boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
         //   animation: isNarrow ? 'slideUp 0.22s ease' : 'fadeIn 0.15s ease',
         // }}
-        className={`bg-surface rounded-tl-[20px] rounded-tr-[20px] ${isNarrow ? 'rounded-bl-0 rounded-br-0' : 'rounded-[20px]'} w-full ${isNarrow ? 'max-w-full' : 'max-w-[380px]'} shadow-lg ${isNarrow ? 'animate-slideUp' : 'animate-fadeIn'}`}
+        className={`bg-surface rounded-tl-[20px] rounded-tr-[20px] ${isNarrow ? 'rounded-bl-0 rounded-br-0' : 'rounded-[20px]'} w-full ${isNarrow ? 'max-w-full' : 'max-w-[300px]'} shadow-lg ${isNarrow ? 'animate-slideUp' : 'animate-fadeIn'}`}
       >
         {calendarContent}
       </div>
