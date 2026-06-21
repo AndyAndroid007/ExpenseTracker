@@ -18,6 +18,9 @@ export default function EditCardForm({ parsed, onSave, onCancel }) {
   const [loading, setLoading] = useState(false);
   const [alertState, setAlertState] = useState(null); // { type: 'rose' | 'green', msg: string }
 
+  const parsedAmount = parseFloat(amount);
+  const isSaveDisabled = loading || !amount || isNaN(parsedAmount) || parsedAmount <= 0;
+
   async function handleSubmit(e) {
     e.preventDefault();
     setAlertState(null);
@@ -139,8 +142,8 @@ export default function EditCardForm({ parsed, onSave, onCancel }) {
         <div className="flex gap-2 mt-1">
           <button
             type="submit"
-            disabled={loading}
-            className="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white border-none cursor-pointer hover:opacity-90 disabled:opacity-50 transition-all shadow-sm"
+            disabled={isSaveDisabled}
+            className="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white border-none cursor-pointer hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
             /* style={{
               background: 'var(--color-primary)',
               color: '#fff',

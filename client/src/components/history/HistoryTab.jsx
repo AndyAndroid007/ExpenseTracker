@@ -91,12 +91,12 @@ function groupEntriesByDate(entries) {
 
     groups[key].entries.push({
       id: entry.id,
-      title: entry.rawText,
+      title: entry.category || 'General',
       category: entry.category || 'General',
-      amount: Number(entry.amount),
+      amount: entry.amount !== null ? Number(entry.amount) : null,
       type: entry.type,
-      nospend: entry.type === 'no_spend',
-      saveday: entry.type === 'save_day'
+      nospend: entry.type === 'save_day' && (entry.amount === null || entry.amount === undefined),
+      saveday: entry.type === 'save_day' && entry.amount !== null && entry.amount !== undefined
     });
   });
 
@@ -197,8 +197,10 @@ export default function HistoryTab({ active }) {
       transactionCount++;
       const cat = entry.category || 'General';
       categorySums[cat] = (categorySums[cat] || 0) + amt;
-    } else if (entry.type === 'no_spend') {
-      noSpendCount++;
+    } else if (entry.type === 'save_day') {
+      if (entry.amount === null || entry.amount === undefined) {
+        noSpendCount++;
+      }
     }
   });
 

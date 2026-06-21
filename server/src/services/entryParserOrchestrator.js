@@ -14,10 +14,26 @@ import logger from '../utils/logger.js';
 export const parseEntry = async (rawText, timezoneOffsetMinutes = 0, ianaTimezone = null) => {
     // 1. First run the ultra-fast, local regex parser
     const regexResult = parseMessage(rawText, timezoneOffsetMinutes);
+    regexResult.intent = 'log_expense'; //Local Regex Parsing is only for logging expenses
     logger.debug({ regexResult, rawText }, 'Local regex parsing complete');
 
     // 2. If local confidence is low, attempt an LLM correction fallback
     if (regexResult.confidenceLevel === 'low') {
+        const greetingOrChitchat = /^(hi|hey|hello|sup|wassup|whatsup|yo|thanks|ty|lol|haha)\b/i;
+        const hasNumber = /\d/.test(rawText);
+        if (greetingOrChitchat.test(rawText) && !hasNumber) {
+            logger.info({ rawText }, 'Greeting or chitchat detected by pre-filter. Skipping LLM.');
+            return {
+                rawText,
+                intent: 'other',
+                type: 'expense',
+                amount: null,
+                category: 'General',
+                expenseDate: getLocalDateString(timezoneOffsetMinutes, 0),
+                confidenceLevel: 'high'
+            };
+        }
+
         logger.info({ rawText }, 'Low local confidence detected. Routing to Gemini LLM fallback service.');
         const localDateContext = getLocalDateString(timezoneOffsetMinutes, 0);
         

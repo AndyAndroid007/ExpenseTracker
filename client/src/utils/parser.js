@@ -1,10 +1,7 @@
 export function parseInput(text) {
   const lower = text.toLowerCase().trim();
 
-  if (/no[\s-]?spend|zero spend|didn.?t spend|nothing today/.test(lower))
-    return { type: 'no_spend', amount: null, category: null };
-
-  if (/saved (today|money)|saving day|no expense/.test(lower))
+  if (/no[\s-]?spend|zero spend|didn.?t spend|nothing today/.test(lower) || /saved (today|money)|saving day|no expense/.test(lower))
     return { type: 'save_day', amount: null, category: null };
 
   const amountMatch = lower.match(/(?:₹|rs\.?\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+)/i);

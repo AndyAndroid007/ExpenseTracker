@@ -45,7 +45,7 @@ export const register = async (req, res, next) => {
 
 export const anonymousLogin = async (req, res, next) => {
     try {
-        const { guestUserId } = req.body;
+        const { guestUserId } = req.body || {};
         logger.info({ guestUserId }, 'Anonymous guest login request entered controller');
         const {token, user} = await authService.anonymousLogin(guestUserId);
         

@@ -29,11 +29,12 @@ export const aggregatePeriodData = async (userId, from, to) => {
             }
         }),
 
-        // 3. PostgreSQL DISTINCT select of unique no-spend days
+        // 3. PostgreSQL DISTINCT select of unique no-spend days (save_day with null amount)
         prisma.entry.findMany({
             where: {
                 userId,
-                type: 'no_spend',
+                type: 'save_day',
+                amount: null,
                 isDeleted: false,
                 expenseDate: { gte: fromDate, lte: toDate }
             },
@@ -41,11 +42,12 @@ export const aggregatePeriodData = async (userId, from, to) => {
             distinct: ['expenseDate']
         }),
 
-        // 4. PostgreSQL DISTINCT select of unique save-day days
+        // 4. PostgreSQL DISTINCT select of unique save-day days (save_day with non-null amount)
         prisma.entry.findMany({
             where: {
                 userId,
                 type: 'save_day',
+                amount: { not: null },
                 isDeleted: false,
                 expenseDate: { gte: fromDate, lte: toDate }
             },

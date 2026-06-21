@@ -32,6 +32,7 @@ const mapDbMessageToFrontend = (msg) => {
       type: msg.type,
       parsed: msg.payload ? {
         id: msg.payload.id,
+        type: msg.payload.type || 'expense',
         amount: Number(msg.payload.amount),
         category: msg.payload.category,
         dateLabel: 'Today',

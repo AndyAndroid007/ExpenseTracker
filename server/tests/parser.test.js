@@ -3,7 +3,7 @@ import { getLocalDateString } from '../src/parser/dates.js';
 
 describe('Modular Parsing Engine Unit Tests', () => {
     describe('Entry Type Detection', () => {
-        it('should classify zero/no spend variations as no_spend', () => {
+        it('should classify zero/no spend variations as save_day', () => {
             const inputs = [
                 'no spend today',
                 'zero spend!',
@@ -13,7 +13,7 @@ describe('Modular Parsing Engine Unit Tests', () => {
             ];
             inputs.forEach(input => {
                 const res = parseMessage(input);
-                expect(res.type).toBe('no_spend');
+                expect(res.type).toBe('save_day');
                 expect(res.amount).toBeNull();
             });
         });
@@ -114,6 +114,10 @@ describe('Modular Parsing Engine Unit Tests', () => {
 
         it('should score low for expense with missing amount', () => {
             expect(parseMessage('Uber yesterday').confidenceLevel).toBe('low');
+        });
+
+        it('should score low when both category and date are missing (2+ missing fields downgrade)', () => {
+            expect(parseMessage('spent 500').confidenceLevel).toBe('low');
         });
     });
 });

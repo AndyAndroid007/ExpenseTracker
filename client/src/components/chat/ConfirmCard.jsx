@@ -42,6 +42,8 @@ export default function ConfirmCard({ parsed, onConfirm }) {
   // const cat = categoryColors[parsed.category] || categoryColors.General;
   const catClass = categoryClasses[parsed.category] || categoryClasses.General;
 
+  const isConfirmDisabled = (!parsed.type || parsed.type === 'expense') && (parsed.amount === null || parsed.amount === undefined || Number(parsed.amount) <= 0);
+
   return (
     <div
       className="rounded-xl p-3 bg-surface border-[0.5px] border-[var(--color-separator)] shadow-sm dark:shadow-[0_4px_12px_rgba(0,0,0,0.3)] flex flex-col gap-2.5 max-w-[280px] animate-fadeIn"
@@ -70,7 +72,8 @@ export default function ConfirmCard({ parsed, onConfirm }) {
       <div className="flex gap-2">
         <button
           onClick={() => onConfirm(parsed, false)}
-          className="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white border-none cursor-pointer hover:opacity-90 transition-all"
+          disabled={isConfirmDisabled}
+          className="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white border-none cursor-pointer hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           // style={{ background: 'var(--color-primary)', color: '#fff', border: 'none', cursor: 'pointer' }}
         >
           Confirm

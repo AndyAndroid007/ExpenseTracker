@@ -103,7 +103,7 @@ describe('Weekly/Monthly/Yearly Insights API Integration Tests', () => {
                     rawText: 'no spend today',
                     amount: null,
                     category: null,
-                    type: 'no_spend',
+                    type: 'save_day',
                     confidenceLevel: 'high',
                     expenseDate: today
                 }
@@ -174,7 +174,7 @@ describe('Weekly/Monthly/Yearly Insights API Integration Tests', () => {
                     rawText: 'no spend today',
                     amount: null,
                     category: null,
-                    type: 'no_spend',
+                    type: 'save_day',
                     confidenceLevel: 'high',
                     expenseDate: today
                 }

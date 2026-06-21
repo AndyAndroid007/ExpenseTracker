@@ -162,7 +162,7 @@ export default function EntryRow({ entry, isLast }) {
             className="text-[11px] text-label-tertiary font-normal"
             /* style={{ fontSize: '11px', color: 'var(--color-label-tertiary)', fontWeight: 400 }} */
           >
-            {entry.category}
+            Expense
           </span>
         </div>
       </div>

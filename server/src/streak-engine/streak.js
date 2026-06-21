@@ -5,9 +5,6 @@ import {getTodayInUserZone, getPreviousDate, toIsoDate } from '../utils/dates.js
 
 const VALID_STREAK_ENTRY_TYPES = new Set([
     'expense',
-    'no-spend',
-    'save-day',
-    'no_spend',
     'save_day'
 ]);
 

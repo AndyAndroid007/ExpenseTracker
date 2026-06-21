@@ -25,15 +25,19 @@ export const parseMessage = (rawText, timezoneOffsetMinutes = 0) => {
     const saveDayPattern = /\b(?:saved?|save-day|save_day|saved?\s+(?:money|today))\b/i;
 
     let type = 'expense';
-    if (noSpendPattern.test(normalized)) {
-        type = 'no_spend';
-    } else if (saveDayPattern.test(normalized)) {
+    if (noSpendPattern.test(normalized) || saveDayPattern.test(normalized)) {
         type = 'save_day';
     }
     logger.trace({ rawText, type }, 'Local resolver determined entry type');
 
     // 2. Extract Amount (only for expenses and savings)
-    const amount = (type === 'expense' || type === 'save_day') ? extractAmount(normalized) : null;
+    let amount = null;
+    if (type === 'expense') {
+        amount = extractAmount(normalized);
+    }
+    else if (type === 'save_day') {
+        amount = noSpendPattern.test(normalized) ? null : (extractAmount(normalized));
+    }
     logger.trace({ rawText, amount }, 'Local resolver extracted amount');
 
     // 3. Extract Category
@@ -49,12 +53,16 @@ export const parseMessage = (rawText, timezoneOffsetMinutes = 0) => {
     // - MEDIUM: Valid amount extracted but date defaulted to today
     // - LOW: Amount is missing entirely for an expense
     let confidenceLevel = 'low';
-    if (type === 'no_spend' || (type === 'save_day' && amount === null)) {
+    if (type === 'save_day' && amount === null) {
         confidenceLevel = 'high';
     } else if (amount !== null) {
-        confidenceLevel = isExplicitDate ? 'high' : 'medium';
+        if (!isExplicitDate && category === 'General') {
+            confidenceLevel = 'low'; // 2+ missing fields (date and category) -> LOW Confidence
+        } else {
+            confidenceLevel = isExplicitDate ? 'high' : 'medium';
+        }
     }
-    
+
     const parsedOutput = {
         rawText,
         type,

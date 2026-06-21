@@ -58,11 +58,11 @@ describe('LLM Fallback Service & Orchestrator Integration Tests', () => {
             mockGenerateContent.mockResolvedValue({
                 response: {
                     text: () => JSON.stringify({
+                        intent: 'log_expense',
                         type: 'expense',
                         amount: 300,
                         category: 'General',
-                        expenseDate: getLocalDateString(offset, -1),
-                        confidenceLevel: 'high'
+                        expenseDate: getLocalDateString(offset, -1)
                     })
                 }
             });
@@ -111,11 +111,11 @@ describe('LLM Fallback Service & Orchestrator Integration Tests', () => {
             mockGenerateContent.mockResolvedValue({
                 response: {
                     text: () => JSON.stringify({
+                        intent: 'log_expense',
                         type: 'expense',
                         amount: null,
                         category: 'General',
-                        expenseDate: getLocalDateString(offset, 0),
-                        confidenceLevel: 'high'
+                        expenseDate: getLocalDateString(offset, 0)
                     })
                 }
             });
@@ -129,6 +129,24 @@ describe('LLM Fallback Service & Orchestrator Integration Tests', () => {
             expect(passedPrompt).toContain('<system_instruction>');
             expect(passedPrompt).toContain('<user_raw_message>');
             expect(passedPrompt).toContain(rawText);
+        });
+
+        it('should route to LLM fallback if both category and date are missing (downgrade to low)', async () => {
+            const rawText = 'spent 500';
+            mockGenerateContent.mockResolvedValue({
+                response: {
+                    text: () => JSON.stringify({
+                        intent: 'log_expense',
+                        type: 'expense',
+                        amount: 500,
+                        category: 'General',
+                        expenseDate: getLocalDateString(offset, 0)
+                    })
+                }
+            });
+            const result = await parseEntry(rawText, offset);
+            expect(result.confidenceLevel).toBe('high');
+            expect(mockGenerateContent).toHaveBeenCalledTimes(1);
         });
     });
 });

@@ -87,7 +87,6 @@ model Category {
 
 enum EntryType {
   expense
-  no_spend
   save_day
 }
 

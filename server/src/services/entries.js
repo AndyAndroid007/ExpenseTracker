@@ -66,16 +66,28 @@ export const postEntry = async (userId, rawText, timezoneOffsetMinutes, ianaTime
         throw parseErr;
     }
 
-    if (parsed.type === 'expense' && parsed.amount === null) {
-        logger.warn({ userId, rawText }, 'Parsing returned low-confidence missing amount for expense');
-        const errorMsg = "Could not extract an amount from your input. Try: 'Spent 200 on food for example'";
-        await chatRepository.createChatMessage({
+    // Handle non-logging intents (query or other chitchat)
+    if (parsed.intent !== 'log_expense') {
+        const sysMsgText = parsed.intent === 'query'
+            ? "I can only help you log expenses or save days right now."
+            : "Doesn't look like an expense — try something like 'spent 200 on lunch' or 'no spend today'.";
+
+        const sysMsg = await chatRepository.createChatMessage({
             userId,
             sender: 'system',
-            text: errorMsg,
+            text: sysMsgText,
             type: 'text'
         });
-        throw new ApiError(400, errorMsg);
+
+        return {
+            entry: null,
+            streak: {
+                current_streak: 0,
+                updated: false
+            },
+            confirmation: sysMsgText,
+            chatMessages: [userMsg, sysMsg]
+        };
     }
 
     const saveEntry = await entriesRepository.createEntry({
@@ -99,12 +111,14 @@ export const postEntry = async (userId, rawText, timezoneOffsetMinutes, ianaTime
 
     let confirmation = '';
     if (parsed.type === 'expense') {
-        confirmation = `₹${parsed.amount} added under ${parsed.category} for today. Edit?`;
-    } else if (parsed.type === 'no_spend') {
-        confirmation = `Got it! No-spend day logged. 🔥 Streak: ${streakResult.streak} days`;
+        const amtStr = parsed.amount !== null ? `₹${parsed.amount}` : '—';
+        confirmation = `${amtStr} added under ${parsed.category} for today. Edit?`;
     } else if (parsed.type === 'save_day') {
-        const amtStr = parsed.amount ? ` ₹${parsed.amount}` : '';
-        confirmation = `Awesome! Saved${amtStr} today. 💰 Streak: ${streakResult.streak} days`;
+        if (parsed.amount === null) {
+            confirmation = `Got it! No-spend day logged. 🔥 Streak: ${streakResult.streak} days`;
+        } else {
+            confirmation = `Awesome! Saved ₹${parsed.amount} today. 💰 Streak: ${streakResult.streak} days`;
+        }
     }
 
     const chatMessages = [userMsg];
@@ -116,7 +130,8 @@ export const postEntry = async (userId, rawText, timezoneOffsetMinutes, ianaTime
             type: 'confirm_card',
             payload: {
                 id: saveEntry.id,
-                amount: Number(saveEntry.amount),
+                type: saveEntry.type,
+                amount: saveEntry.amount !== null ? Number(saveEntry.amount) : null,
                 category: saveEntry.category,
                 confidence: saveEntry.confidenceLevel,
                 streak: {
@@ -157,7 +172,7 @@ export const postEntry = async (userId, rawText, timezoneOffsetMinutes, ianaTime
         },
         confirmation,
         chatMessages
-    }
+    };
 };
 
 export const patchEntry = async (userId, entryId, updatedEntry) => {
