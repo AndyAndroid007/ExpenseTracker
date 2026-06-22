@@ -6,6 +6,8 @@ import logger from '../utils/logger.js';
 import { maintainStreak } from '../streak-engine/streak.js';
 import {parseEntry} from './entryParserOrchestrator.js';
 import redis from '../streak-engine/startUp.js';
+import * as merchantRepository from '../repositories/merchant.js';
+import { getLocalDateString } from '../parser/dates.js';
 
 const invalidateInsightsCache = async (userId) => {
     try {
@@ -64,6 +66,27 @@ export const postEntry = async (userId, rawText, timezoneOffsetMinutes, ianaTime
             type: 'text'
         });
         throw parseErr;
+    }
+
+    // Handle future dates (sarcastic rejection)
+    if (parsed.isFuture) {
+        const sysMsgText = "Nice try, time traveler! 🚀 We can't log expenses for future dates.";
+        const sysMsg = await chatRepository.createChatMessage({
+            userId,
+            sender: 'system',
+            text: sysMsgText,
+            type: 'text'
+        });
+
+        return {
+            entry: null,
+            streak: {
+                current_streak: 0,
+                updated: false
+            },
+            confirmation: sysMsgText,
+            chatMessages: [userMsg, sysMsg]
+        };
     }
 
     // Handle non-logging intents (query or other chitchat)
@@ -134,6 +157,8 @@ export const postEntry = async (userId, rawText, timezoneOffsetMinutes, ianaTime
                 amount: saveEntry.amount !== null ? Number(saveEntry.amount) : null,
                 category: saveEntry.category,
                 confidence: saveEntry.confidenceLevel,
+                expenseDate: parsed.expenseDate,
+                unmappedMerchant: parsed.unmappedMerchant || null,
                 streak: {
                     current_streak: streakResult.streak,
                     updated: streakResult.updated
@@ -175,7 +200,7 @@ export const postEntry = async (userId, rawText, timezoneOffsetMinutes, ianaTime
     };
 };
 
-export const patchEntry = async (userId, entryId, updatedEntry) => {
+export const patchEntry = async (userId, entryId, updatedEntry, timezoneOffsetMinutes = 0) => {
     logger.trace({ userId, entryId }, 'Service patchEntry started');
     const user = await usersRepository.getUserById(userId);
     if (!user) {
@@ -183,6 +208,18 @@ export const patchEntry = async (userId, entryId, updatedEntry) => {
         throw new ApiError(404, "User not found");
     }
     
+    if (updatedEntry.expenseDate) {
+        const localToday = getLocalDateString(timezoneOffsetMinutes, 0);
+        const dateStr = typeof updatedEntry.expenseDate === 'string'
+            ? updatedEntry.expenseDate.slice(0, 10)
+            : new Date(updatedEntry.expenseDate).toISOString().slice(0, 10);
+
+        if (dateStr > localToday) {
+            throw new ApiError(400, "Nice try, time traveler! 🚀 We can't log expenses for future dates.");
+        }
+        updatedEntry.expenseDate = new Date(`${dateStr}T00:00:00.000Z`);
+    }
+
     const patchResult = await entriesRepository.patchEntry(userId, entryId, updatedEntry);
     logger.info({ userId, entryId }, 'Successfully updated entry fields in database');
 
@@ -191,6 +228,16 @@ export const patchEntry = async (userId, entryId, updatedEntry) => {
         if (confirmMsg) {
             const hasStreakUpdate = confirmMsg.payload && confirmMsg.payload.streak && confirmMsg.payload.streak.updated;
             const streakDays = confirmMsg.payload?.streak?.current_streak || 0;
+
+            // If user edited/corrected from General and has unmappedMerchant, log the correction
+            if (confirmMsg.payload?.unmappedMerchant && updatedEntry.category && updatedEntry.category !== 'General') {
+                try {
+                    await merchantRepository.logCorrection(confirmMsg.payload.unmappedMerchant, updatedEntry.category);
+                    logger.info({ merchantName: confirmMsg.payload.unmappedMerchant, correctedCategory: updatedEntry.category }, 'Successfully logged unrecognized merchant category correction');
+                } catch (merchantErr) {
+                    logger.error({ err: merchantErr }, 'Failed to log unrecognized merchant category correction');
+                }
+            }
 
             await chatRepository.updateChatMessage(confirmMsg.id, {
                 isConfirmed: true

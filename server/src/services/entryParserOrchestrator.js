@@ -17,13 +17,15 @@ export const parseEntry = async (rawText, timezoneOffsetMinutes = 0, ianaTimezon
     regexResult.intent = 'log_expense'; //Local Regex Parsing is only for logging expenses
     logger.debug({ regexResult, rawText }, 'Local regex parsing complete');
 
+    let parsed = regexResult;
+
     // 2. If local confidence is low, attempt an LLM correction fallback
     if (regexResult.confidenceLevel === 'low') {
         const greetingOrChitchat = /^(hi|hey|hello|sup|wassup|whatsup|yo|thanks|ty|lol|haha)\b/i;
         const hasNumber = /\d/.test(rawText);
         if (greetingOrChitchat.test(rawText) && !hasNumber) {
             logger.info({ rawText }, 'Greeting or chitchat detected by pre-filter. Skipping LLM.');
-            return {
+            parsed = {
                 rawText,
                 intent: 'other',
                 type: 'expense',
@@ -32,25 +34,30 @@ export const parseEntry = async (rawText, timezoneOffsetMinutes = 0, ianaTimezon
                 expenseDate: getLocalDateString(timezoneOffsetMinutes, 0),
                 confidenceLevel: 'high'
             };
-        }
-
-        logger.info({ rawText }, 'Low local confidence detected. Routing to Gemini LLM fallback service.');
-        const localDateContext = getLocalDateString(timezoneOffsetMinutes, 0);
-        
-        try {
-            const llmResult = await fallbackParseWithLLM(rawText, regexResult, localDateContext, ianaTimezone);
+        } else {
+            logger.info({ rawText }, 'Low local confidence detected. Routing to Gemini LLM fallback service.');
+            const localDateContext = getLocalDateString(timezoneOffsetMinutes, 0);
             
-            // If the LLM successfully resolved and structured the text, return it
-            if (llmResult) {
-                return llmResult;
+            try {
+                const llmResult = await fallbackParseWithLLM(rawText, regexResult, localDateContext, ianaTimezone);
+                
+                // If the LLM successfully resolved and structured the text, return it
+                if (llmResult) {
+                    parsed = llmResult;
+                }
+            } catch (error) {
+                logger.error({ error, rawText }, 'Error during LLM orchestrator fallback execution');
             }
-        } catch (error) {
-            logger.error({ error, rawText }, 'Error during LLM orchestrator fallback execution');
         }
     }
 
-    // 3. Fallback to regex result if confidence is high/medium or the LLM failed
-    return regexResult;
+    // 3. Mark future logs
+    const localToday = getLocalDateString(timezoneOffsetMinutes, 0);
+    if (parsed.expenseDate > localToday) {
+        parsed.isFuture = true;
+    }
+
+    return parsed;
 };
 
 export default parseEntry;

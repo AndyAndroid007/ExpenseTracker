@@ -2,6 +2,7 @@ import { extractAmount } from './amount.js';
 import { extractCategory } from './categories.js';
 import { parseExpenseDate } from './dates.js';
 import logger from '../utils/logger.js';
+import { extractUnmappedMerchant } from './merchant.js';
 
 /**
  * Main parser entry point.
@@ -44,6 +45,8 @@ export const parseMessage = (rawText, timezoneOffsetMinutes = 0) => {
     const category = extractCategory(normalized);
     logger.trace({ rawText, category }, 'Local resolver extracted category');
 
+    const unmappedMerchant = extractUnmappedMerchant(normalized, category);
+
     // 4. Resolve Date & Explicitness
     const { date: expenseDate, explicit: isExplicitDate } = parseExpenseDate(normalized, timezoneOffsetMinutes);
     logger.trace({ rawText, expenseDate, isExplicitDate }, 'Local resolver resolved expense date');
@@ -68,6 +71,7 @@ export const parseMessage = (rawText, timezoneOffsetMinutes = 0) => {
         type,
         amount,
         category,
+        unmappedMerchant,
         expenseDate,
         confidenceLevel
     };

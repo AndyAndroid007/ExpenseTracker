@@ -96,6 +96,8 @@ describe('Modular Parsing Engine Unit Tests', () => {
             expect(parseMessage('food 350 2 days ago', offset).expenseDate).toBe(getLocalDateString(offset, -2));
             expect(parseMessage('before 3 days spent 1000', offset).expenseDate).toBe(getLocalDateString(offset, -3));
             expect(parseMessage('2 days after logged 400', offset).expenseDate).toBe(getLocalDateString(offset, 2));
+            expect(parseMessage('food 350 day before yesterday', offset).expenseDate).toBe(getLocalDateString(offset, -2));
+            expect(parseMessage('food 350 3 days before yesterday', offset).expenseDate).toBe(getLocalDateString(offset, -4));
         });
     });
 

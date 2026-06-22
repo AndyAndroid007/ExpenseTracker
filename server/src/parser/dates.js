@@ -25,6 +25,19 @@ const WEEKDAYS = {
  * @returns {{ date: string, explicit: boolean }} Resolved date and whether it was explicitly mentioned
  */
 export const parseExpenseDate = (text, timezoneOffsetMinutes = 0) => {
+    // 0. Relative past days from yesterday (e.g. "3 days before yesterday", "day before yesterday")
+    const daysBeforeYesterdayMatch = text.match(/\b(\d+)\s+days?\s+before\s+yesterday\b/i);
+    if (daysBeforeYesterdayMatch) {
+        const days = parseInt(daysBeforeYesterdayMatch[1], 10);
+        if (days < 100) {
+            return { date: getLocalDateString(timezoneOffsetMinutes, -(days + 1)), explicit: true };
+        }
+    }
+
+    if (/\bday\s+before\s+yesterday\b/i.test(text)) {
+        return { date: getLocalDateString(timezoneOffsetMinutes, -2), explicit: true };
+    }
+
     // 1. Explicit yesterday
     if (/\byesterday\b/i.test(text)) {
         return { date: getLocalDateString(timezoneOffsetMinutes, -1), explicit: true };

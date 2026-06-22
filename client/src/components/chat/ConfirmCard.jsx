@@ -63,6 +63,11 @@ export default function ConfirmCard({ parsed, onConfirm }) {
           {parsed.category}
         </span>
       </div>
+      {parsed.unmappedMerchant && parsed.category === 'General' && (
+        <div className="bg-amber-50/70 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/30 rounded-lg p-2 text-[9px] leading-normal font-medium animate-fadeIn">
+          🔍 New merchant detected ("{parsed.unmappedMerchant}"). Correct the category to help Spendly learn!
+        </div>
+      )}
       <p 
         className="text-[10px] text-label-tertiary"
         // style={{ color: 'var(--color-label-tertiary)' }}

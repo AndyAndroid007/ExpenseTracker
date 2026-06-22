@@ -14,6 +14,34 @@ const WELCOME = [
 
 const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s;
 
+const formatDateLabel = (dateStr) => {
+  if (!dateStr) return 'Today';
+  const targetStr = dateStr.slice(0, 10);
+  
+  const localToday = new Date();
+  const offset = localToday.getTimezoneOffset();
+  const localTime = new Date(localToday.getTime() - (offset * 60 * 1000));
+  const todayStr = localTime.toISOString().slice(0, 10);
+  
+  if (targetStr === todayStr) {
+    return 'Today';
+  }
+  
+  const dTarget = new Date(targetStr + 'T00:00:00');
+  const dToday = new Date(todayStr + 'T00:00:00');
+  
+  const diffTime = dToday.getTime() - dTarget.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays === 2) return 'Day before yesterday';
+  if (diffDays > 2) return `${diffDays} days ago`;
+  if (diffDays === -1) return 'Tomorrow';
+  if (diffDays < -1) return `${Math.abs(diffDays)} days from now`;
+  
+  return targetStr;
+};
+
 const mapDbMessageToFrontend = (msg) => {
   // A confirmed card is rendered directly as its resolved plain text
   if (msg.type === 'confirm_card' && msg.isConfirmed) {
@@ -26,6 +54,7 @@ const mapDbMessageToFrontend = (msg) => {
     };
   }
   if (msg.type === 'confirm_card') {
+    const expenseDate = msg.payload?.expenseDate || new Date().toISOString().slice(0, 10);
     return {
       sender: msg.sender,
       text: msg.text,
@@ -35,8 +64,10 @@ const mapDbMessageToFrontend = (msg) => {
         type: msg.payload.type || 'expense',
         amount: Number(msg.payload.amount),
         category: msg.payload.category,
-        dateLabel: 'Today',
+        expenseDate: expenseDate,
+        dateLabel: formatDateLabel(expenseDate),
         confidence: capitalize(msg.payload.confidence),
+        unmappedMerchant: msg.payload.unmappedMerchant || null,
         streak: msg.payload.streak
       } : null
     };

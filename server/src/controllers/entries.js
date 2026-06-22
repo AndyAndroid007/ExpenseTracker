@@ -2,8 +2,8 @@ import * as entryService from '../services/entries.js';
 import logger from '../utils/logger.js';
 
 export const postEntry = async (req, res, next) => {
+    const userId = req.user?.id;
     try {
-        const userId = req.user.id;
         const timezoneOffsetMinutes = req.headers['x-timezone-offset-minutes'] || 0;
         const ianaTimezone = req.headers['x-timezone'] || null;
         
@@ -11,7 +11,7 @@ export const postEntry = async (req, res, next) => {
         
         const userEntry = await entryService.postEntry(userId, req.body.rawText, timezoneOffsetMinutes, ianaTimezone);
 
-        logger.info({ userId, entryId: userEntry.entry.id }, 'Successfully created and confirmed entry');
+        logger.info({ userId, entryId: userEntry.entry?.id }, 'Successfully created and confirmed entry');
         res.status(201).json(userEntry);
     } catch (error) {
         logger.error({ err: error, userId }, 'Failed to create expense entry in controller');
@@ -20,8 +20,8 @@ export const postEntry = async (req, res, next) => {
 }
 
 export const getEntries = async (req, res, next) => {
+    const userId = req.user?.id;
     try {
-        const userId = req.user.id;
         const filters = {
             from: req.query.from,
             to: req.query.to,
@@ -42,13 +42,13 @@ export const getEntries = async (req, res, next) => {
 }
 
 export const patchEntry = async (req, res, next) => {
+    const userId = req.user?.id;
+    const entryId = req.params.id;
     try {
-        const userId = req.user.id;
-        const entryId = req.params.id;
+        const timezoneOffsetMinutes = req.headers['x-timezone-offset-minutes'] || 0;
+        logger.info({ userId, entryId, timezoneOffsetMinutes }, 'Incoming request to patch entry fields');
         
-        logger.info({ userId, entryId }, 'Incoming request to patch entry fields');
-        
-        const updatedEntry = await entryService.patchEntry(userId, entryId, req.body);
+        const updatedEntry = await entryService.patchEntry(userId, entryId, req.body, timezoneOffsetMinutes);
 
         logger.info({ userId, entryId }, 'Successfully updated entry');
         res.status(200).json(updatedEntry);
@@ -59,10 +59,9 @@ export const patchEntry = async (req, res, next) => {
 }
 
 export const deleteEntry = async (req, res, next) => {
+    const userId = req.user?.id;
+    const entryId = req.params.id;
     try {
-        const userId = req.user.id;
-        const entryId = req.params.id;
-        
         logger.info({ userId, entryId }, 'Incoming request to delete entry');
         
         const deletedEntry = await entryService.deleteEntry(userId, entryId);

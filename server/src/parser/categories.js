@@ -1,4 +1,4 @@
-const CATEGORY_KEYWORDS = {
+export const CATEGORY_KEYWORDS = {
     Food: ['food', 'lunch', 'dinner', 'breakfast', 'zomato', 'swiggy', 'restaurant', 'cafe', 'coffee', 'starbucks', 'grocery', 'groceries', 'tea', 'snack', 'snacks', 'eat'],
     Transport: ['uber', 'ola', 'metro', 'bus', 'auto', 'petrol', 'transport', 'cab', 'taxi', 'train', 'flight', 'diesel', 'fuel', 'fare', 'ride'],
     Shopping: ['amazon', 'flipkart', 'shopping', 'clothes', 'mall', 'purchase', 'buy', 'gift', 'shoes', 'gadget', 'device'],

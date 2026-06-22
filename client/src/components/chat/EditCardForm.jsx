@@ -15,6 +15,7 @@ const categoryClasses = {
 export default function EditCardForm({ parsed, onSave, onCancel }) {
   const [amount, setAmount] = useState(parsed.amount);
   const [category, setCategory] = useState(parsed.category);
+  const [expenseDate, setExpenseDate] = useState(parsed.expenseDate || new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(false);
   const [alertState, setAlertState] = useState(null); // { type: 'rose' | 'green', msg: string }
 
@@ -36,10 +37,11 @@ export default function EditCardForm({ parsed, onSave, onCancel }) {
 
     setLoading(true);
     try {
-      logger.info({ entryId: parsed.id, amount: parsedAmount, category }, 'Saving changes...');
+      logger.info({ entryId: parsed.id, amount: parsedAmount, category, expenseDate }, 'Saving changes...');
       const response = await api.patch(`/entries/${parsed.id}`, {
         amount: parsedAmount,
         category,
+        expenseDate,
       });
 
       logger.info({ entryId: parsed.id }, 'Changes saved successfully');
@@ -53,6 +55,7 @@ export default function EditCardForm({ parsed, onSave, onCancel }) {
           ...parsed,
           amount: parsedAmount,
           category,
+          expenseDate,
           streak: response.data?.entry ? parsed.streak : parsed.streak
         });
       }, 500);
@@ -77,7 +80,7 @@ export default function EditCardForm({ parsed, onSave, onCancel }) {
         padding: '1.25rem',
       }} */
     >
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-0.5">
         <span className="text-[11px] font-bold tracking-[0.06em] text-label-tertiary uppercase">
           Edit Details
         </span>
@@ -116,6 +119,17 @@ export default function EditCardForm({ parsed, onSave, onCancel }) {
               borderRadius: '8px',
               padding: '6px 10px',
             }} */
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] text-label-secondary font-semibold">Date</label>
+          <input
+            type="date"
+            value={expenseDate}
+            onChange={e => setExpenseDate(e.target.value)}
+            disabled={loading}
+            className="bg-bg border-[0.5px] border-separator rounded-lg px-3 py-1.5 text-xs text-label-primary outline-none focus:border-primary transition-all disabled:opacity-50"
           />
         </div>
 
