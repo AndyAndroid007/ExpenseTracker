@@ -24,6 +24,7 @@ model User {
   streak    Streak?
   dailyLogs DailyLog[]
   chatMessages ChatMessage[]
+  pushSubscriptions PushSubscription[]
 }
 
 model ChatMessage {
@@ -68,7 +69,19 @@ model Streak {
   currentStreak Int @default(0)
   longestStreak Int @default(0)
   lastLoggedDate DateTime? @db.Date
+  freezesAvailable Int @default(2)
+  lastFreezeUsedAt DateTime? @db.Date
   updatedAt DateTime @updatedAt
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
 }
 
 model DailyLog {

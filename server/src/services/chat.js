@@ -1,5 +1,6 @@
 import * as chatRepository from '../repositories/chat.js';
 import logger from '../utils/logger.js';
+import getRandomReply from '../lib/replies.js';
 
 export const getChatMessages = async (userId) => {
     logger.trace({ userId }, 'Service getChatMessages started');
@@ -10,7 +11,7 @@ export const getChatMessages = async (userId) => {
         const welcomeMessage = await chatRepository.createChatMessage({
             userId,
             sender: 'system',
-            text: "Hey! 👋 I'm Spendly. Tell me what you spent today, or say 'no spend' if you didn't spend anything.",
+            text: getRandomReply('welcome'),
             type: 'text'
         });
         messages = [welcomeMessage];

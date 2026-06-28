@@ -5,6 +5,7 @@ import authRouter from './auth.js';
 import streakRouter from './streak.js';
 import insightsRouter from './insights.js';
 import chatRouter from './chat.js';
+import notificationsRouter from './notifications.js';
 
 const router = express.Router();
 
@@ -14,5 +15,6 @@ router.use('/auth', authRouter);
 router.use('/streaks', streakRouter);
 router.use('/insights', insightsRouter);
 router.use('/chat', chatRouter);
+router.use('/notifications', notificationsRouter);
 
 export default router;

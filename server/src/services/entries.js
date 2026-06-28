@@ -8,6 +8,7 @@ import {parseEntry} from './entryParserOrchestrator.js';
 import redis from '../streak-engine/startUp.js';
 import * as merchantRepository from '../repositories/merchant.js';
 import { getLocalDateString } from '../parser/dates.js';
+import getRandomReply from '../lib/replies.js';
 
 const invalidateInsightsCache = async (userId) => {
     try {
@@ -58,7 +59,7 @@ export const postEntry = async (userId, rawText, timezoneOffsetMinutes, ianaTime
         logger.debug({ userId, parsedResult: parsed }, 'Parsing orchestration returned resolved fields');
     } catch (parseErr) {
         logger.error({ err: parseErr, userId }, 'Failed to parse raw entry text');
-        const errorMsg = "Hmm, I couldn't catch that. Try: 'Spent 200 on food' or 'no spend today'.";
+        const errorMsg = getRandomReply('parse_failure');
         await chatRepository.createChatMessage({
             userId,
             sender: 'system',
@@ -70,7 +71,7 @@ export const postEntry = async (userId, rawText, timezoneOffsetMinutes, ianaTime
 
     // Handle future dates (sarcastic rejection)
     if (parsed.isFuture) {
-        const sysMsgText = "Nice try, time traveler! 🚀 We can't log expenses for future dates.";
+        const sysMsgText = getRandomReply('future_rejection');
         const sysMsg = await chatRepository.createChatMessage({
             userId,
             sender: 'system',
@@ -91,9 +92,7 @@ export const postEntry = async (userId, rawText, timezoneOffsetMinutes, ianaTime
 
     // Handle non-logging intents (query or other chitchat)
     if (parsed.intent !== 'log_expense') {
-        const sysMsgText = parsed.intent === 'query'
-            ? "I can only help you log expenses or save days right now."
-            : "Doesn't look like an expense — try something like 'spent 200 on lunch' or 'no spend today'.";
+        const sysMsgText = getRandomReply(parsed.intent === 'query' ? 'query_redirect' : 'chitchat');
 
         const sysMsg = await chatRepository.createChatMessage({
             userId,
@@ -134,13 +133,20 @@ export const postEntry = async (userId, rawText, timezoneOffsetMinutes, ianaTime
 
     let confirmation = '';
     if (parsed.type === 'expense') {
-        const amtStr = parsed.amount !== null ? `₹${parsed.amount}` : '—';
-        confirmation = `${amtStr} added under ${parsed.category} for today. Edit?`;
+        confirmation = getRandomReply('expense_confirmation', {
+            amount: parsed.amount !== null ? `₹${parsed.amount}` : '—',
+            category: parsed.category
+        });
     } else if (parsed.type === 'save_day') {
         if (parsed.amount === null) {
-            confirmation = `Got it! No-spend day logged. 🔥 Streak: ${streakResult.streak} days`;
+            confirmation = getRandomReply('no_spend_confirmation', {
+                streak: streakResult.streak
+            });
         } else {
-            confirmation = `Awesome! Saved ₹${parsed.amount} today. 💰 Streak: ${streakResult.streak} days`;
+            confirmation = getRandomReply('save_day_confirmation', {
+                amount: parsed.amount,
+                streak: streakResult.streak
+            });
         }
     }
 
@@ -215,7 +221,7 @@ export const patchEntry = async (userId, entryId, updatedEntry, timezoneOffsetMi
             : new Date(updatedEntry.expenseDate).toISOString().slice(0, 10);
 
         if (dateStr > localToday) {
-            throw new ApiError(400, "Nice try, time traveler! 🚀 We can't log expenses for future dates.");
+            throw new ApiError(400, getRandomReply('future_rejection'));
         }
         updatedEntry.expenseDate = new Date(`${dateStr}T00:00:00.000Z`);
     }

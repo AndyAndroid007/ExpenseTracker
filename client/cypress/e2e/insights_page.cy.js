@@ -1,3 +1,5 @@
+import { REPLIES } from '../../../server/src/lib/replies.js';
+
 describe('Expense Tracker - Insights Page Flows', () => {
   beforeEach(() => {
     cy.visit('/');
@@ -21,7 +23,13 @@ describe('Expense Tracker - Insights Page Flows', () => {
 
     // 3. Log a no-spend day
     cy.get('textarea[placeholder*="Swiggy"]').type('no spend today{enter}');
-    cy.contains('No-spend day logged').should('be.visible');
+    const noSpendRegex = new RegExp(
+      [1, 2, 3, 4, 5, 0].flatMap(streak => 
+        REPLIES.no_spend_confirmation.map(fn => fn({ streak }).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      ).join('|'),
+      'i'
+    );
+    cy.contains(noSpendRegex).should('be.visible');
 
     // 4. Navigate to Insights tab
     cy.get('nav').contains('button', 'Insights').click();

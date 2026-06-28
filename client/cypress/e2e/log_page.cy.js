@@ -1,3 +1,11 @@
+import { REPLIES } from '../../../server/src/lib/replies.js';
+
+const buildCategoryRegex = (category, params = {}) => {
+  const templates = REPLIES[category].map(fn => fn(params));
+  const escaped = templates.map(str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  return new RegExp(escaped.join('|'));
+};
+
 describe('Expense Tracker - Log Page Flows', () => {
   beforeEach(() => {
     cy.visit('/');
@@ -6,14 +14,23 @@ describe('Expense Tracker - Log Page Flows', () => {
 
   it('should route greeting chitchat without showing a confirm card', () => {
     cy.get('textarea[placeholder*="Swiggy"]').type('hello{enter}');
-    cy.contains("Hey! 👋 I'm Spendly").should('be.visible');
-    cy.contains("Doesn't look like an expense").should('be.visible');
+    
+    cy.contains(buildCategoryRegex('welcome')).should('be.visible');
+    cy.contains(buildCategoryRegex('chitchat')).should('be.visible');
+
     cy.contains('button', 'Confirm').should('not.exist');
   });
 
   it('should automatically log a no-spend day without a confirm card', () => {
     cy.get('textarea[placeholder*="Swiggy"]').type('no spend today{enter}');
-    cy.contains('No-spend day logged').should('be.visible');
+    
+    const noSpendRegex = new RegExp(
+      [1, 2, 3, 4, 5, 0].flatMap(streak => 
+        REPLIES.no_spend_confirmation.map(fn => fn({ streak }).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      ).join('|')
+    );
+    cy.contains(noSpendRegex).should('be.visible');
+
     cy.contains('button', 'Confirm').should('not.exist');
   });
 
@@ -80,7 +97,9 @@ describe('Expense Tracker - Log Page Flows', () => {
 
   it('should reject future date logging with a sarcastic message', () => {
     cy.get('textarea[placeholder*="Swiggy"]').type('Uber 250 tomorrow{enter}');
-    cy.contains("Nice try, time traveler!").should('be.visible');
+    
+    cy.contains(buildCategoryRegex('future_rejection')).should('be.visible');
+
     cy.contains('button', 'Confirm').should('not.exist');
   });
 
@@ -119,7 +138,7 @@ describe('Expense Tracker - Log Page Flows', () => {
     cy.contains('button', 'Save').click();
 
     // Verify sarcastic warning is shown in the form alert
-    cy.contains("Nice try, time traveler!").should('be.visible');
+    cy.contains(buildCategoryRegex('future_rejection')).should('be.visible');
 
     // Change date to yesterday
     const yesterday = new Date();

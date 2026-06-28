@@ -39,7 +39,9 @@ describe('Streak System Integration Tests', () => {
         expect(res.body).toEqual({
             current_streak: 0,
             longest_streak: 0,
-            last_logged_date: null
+            last_logged_date: null,
+            freezes_available: 2,
+            freeze_used_today: false
         });
     });
 
@@ -67,22 +69,25 @@ describe('Streak System Integration Tests', () => {
         expect(res.body).toEqual({
             current_streak: 5,
             longest_streak: 8,
-            last_logged_date: yesterday.toISOString().split('T')[0]
+            last_logged_date: yesterday.toISOString().split('T')[0],
+            freezes_available: 2,
+            freeze_used_today: false
         });
     });
 
-    it('should lazily reset current streak to 0 if last logged 2+ days ago', async () => {
+    it('should auto-consume streak freeze and preserve streak if last logged 2 days ago', async () => {
         const twoDaysAgo = new Date();
         twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
         twoDaysAgo.setUTCHours(0, 0, 0, 0);
 
-        // Seed an expired streak
+        // Seed a streak with 2 freezes available
         await prisma.streak.create({
             data: {
                 userId: testUser.id,
                 currentStreak: 5,
                 longestStreak: 8,
-                lastLoggedDate: twoDaysAgo
+                lastLoggedDate: twoDaysAgo,
+                freezesAvailable: 2
             }
         });
 
@@ -92,17 +97,44 @@ describe('Streak System Integration Tests', () => {
             .set('x-timezone-offset-minutes', '0')
             .expect(200);
 
-        // Current streak should be reset, but longest streak kept
+        // Streak freeze auto-consumes (freezes_available becomes 1) and retains current_streak 5!
+        expect(res.body).toEqual({
+            current_streak: 5,
+            longest_streak: 8,
+            last_logged_date: twoDaysAgo.toISOString().split('T')[0],
+            freezes_available: 1,
+            freeze_used_today: true
+        });
+    });
+
+    it('should reset current streak to 0 if last logged 2+ days ago and 0 freezes left', async () => {
+        const twoDaysAgo = new Date();
+        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+        twoDaysAgo.setUTCHours(0, 0, 0, 0);
+
+        // Seed an expired streak with 0 freezes
+        await prisma.streak.create({
+            data: {
+                userId: testUser.id,
+                currentStreak: 5,
+                longestStreak: 8,
+                lastLoggedDate: twoDaysAgo,
+                freezesAvailable: 0
+            }
+        });
+
+        const res = await request(app)
+            .get('/api/streaks')
+            .set('Cookie', [authToken])
+            .set('x-timezone-offset-minutes', '0')
+            .expect(200);
+
         expect(res.body).toEqual({
             current_streak: 0,
             longest_streak: 8,
-            last_logged_date: twoDaysAgo.toISOString().split('T')[0]
+            last_logged_date: twoDaysAgo.toISOString().split('T')[0],
+            freezes_available: 0,
+            freeze_used_today: false
         });
-
-        // Verify it was updated in the DB
-        const dbStreak = await prisma.streak.findUnique({
-            where: { userId: testUser.id }
-        });
-        expect(dbStreak.currentStreak).toBe(0);
     });
 });

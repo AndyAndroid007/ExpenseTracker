@@ -1,6 +1,7 @@
 import ProfileSection from './ProfileSection';
 import ThemeSection from './ThemeSection';
 import AboutSection from './AboutSection';
+import NotificationsSection from './NotificationsSection';
 
 export default function SettingsTab() {
   return (
@@ -28,6 +29,11 @@ export default function SettingsTab() {
         <section>
           <SectionLabel>Appearance</SectionLabel>
           <ThemeSection />
+        </section>
+
+        <section>
+          <SectionLabel>Notifications & Streaks</SectionLabel>
+          <NotificationsSection />
         </section>
 
         <section>

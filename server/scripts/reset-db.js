@@ -38,12 +38,13 @@ async function main() {
   console.log('🗑️  Starting cascade database reset...\n');
 
   const tables = [
-    { name: 'ChatMessage', fn: () => prisma.chatMessage.deleteMany() },
-    { name: 'DailyLog',    fn: () => prisma.dailyLog.deleteMany()    },
-    { name: 'Streak',      fn: () => prisma.streak.deleteMany()      },
-    { name: 'Entry',       fn: () => prisma.entry.deleteMany()       },
-    { name: 'User',        fn: () => prisma.user.deleteMany()        },
-    { name: 'Category',    fn: () => prisma.category.deleteMany()    },
+    { name: 'PushSubscription', fn: () => prisma.pushSubscription.deleteMany() },
+    { name: 'ChatMessage',     fn: () => prisma.chatMessage.deleteMany()      },
+    { name: 'DailyLog',        fn: () => prisma.dailyLog.deleteMany()        },
+    { name: 'Streak',          fn: () => prisma.streak.deleteMany()          },
+    { name: 'Entry',           fn: () => prisma.entry.deleteMany()           },
+    { name: 'User',            fn: () => prisma.user.deleteMany()            },
+    { name: 'Category',        fn: () => prisma.category.deleteMany()        },
   ];
 
   for (const table of tables) {

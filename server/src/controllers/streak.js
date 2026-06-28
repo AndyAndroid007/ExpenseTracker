@@ -15,7 +15,9 @@ export const getStreaks = async (req, res, next) => {
         return res.status(200).json({
             current_streak: streak.currentStreak,
             longest_streak: streak.longestStreak,
-            last_logged_date: streak.lastLoggedDate
+            last_logged_date: streak.lastLoggedDate,
+            freezes_available: streak.freezesAvailable,
+            freeze_used_today: streak.freezeUsedToday
         });
     } catch (error) {
         logger.error({ err: error, userId: req.user?.id }, 'Failed to retrieve streak details in controller');

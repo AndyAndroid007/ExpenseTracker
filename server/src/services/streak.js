@@ -8,10 +8,12 @@ export const getStreaks = async (userId, timezoneOffsetMinutes) => {
         return {
             currentStreak: 0,
             longestStreak: 0,
-            lastLoggedDate: null
+            lastLoggedDate: null,
+            freezesAvailable: 2,
+            freezeUsedToday: false,
         }
     }
-
+    let freezeUsedToday = false;
     if (streak.lastLoggedDate) {
         const today = getTodayInUserZone({timezoneOffsetMinutes});
         const yesterday = getPreviousDate(today);
@@ -19,13 +21,24 @@ export const getStreaks = async (userId, timezoneOffsetMinutes) => {
         const lastLoggedDateStr = toIsoDate(streak.lastLoggedDate);
 
         if (lastLoggedDateStr !== today && lastLoggedDateStr !== yesterday) {
-            streak.currentStreak = 0
-            await streakRepository.updateStreak(userId, {currentStreak: 0, lastLoggedDate: streak.lastLoggedDate});
+            if (streak.freezesAvailable > 0) {
+                streak.freezesAvailable -= 1;
+                streak.lastFreezeUsedAt = new Date();
+                freezeUsedToday = true;
+
+                await streakRepository.updateStreak(userId, {currentStreak: streak.currentStreak, lastLoggedDate: new Date(`${yesterday}T00:00:00.000Z`), freezesAvailable: streak.freezesAvailable, lastFreezeUsedAt: streak.lastFreezeUsedAt});
+            }
+            else {
+                streak.currentStreak = 0
+                await streakRepository.updateStreak(userId, {currentStreak: 0, lastLoggedDate: streak.lastLoggedDate});
+            }
         }
     }
     return {
         currentStreak: streak.currentStreak,
         longestStreak: streak.longestStreak,
-        lastLoggedDate: streak.lastLoggedDate ? toIsoDate(streak.lastLoggedDate) : null
+        lastLoggedDate: streak.lastLoggedDate ? toIsoDate(streak.lastLoggedDate) : null,
+        freezesAvailable: streak.freezesAvailable ?? 2,
+        freezeUsedToday
     };
 };
