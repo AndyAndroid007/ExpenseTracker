@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { subscribeUserToPush, unsubscribeUserFromPush } from '../../utils/pushNotifications';
+import { subscribeUserToPush, unsubscribeUserFromPush, registerServiceWorker } from '../../utils/pushNotifications';
 import api from '../../utils/api';
 import AlertBox from '../ui/AlertBox';
 
@@ -17,11 +17,13 @@ export default function NotificationsSection() {
 
     // Check if push subscription already exists on device
     if ('serviceWorker' in navigator && 'PushManager' in window) {
-      navigator.serviceWorker.ready.then(reg => {
-        reg.pushManager.getSubscription().then(sub => {
-          if (sub) {
-            setIsEnabled(true);
-          }
+      registerServiceWorker().then(() => {
+        navigator.serviceWorker.ready.then(reg => {
+          reg.pushManager.getSubscription().then(sub => {
+            if (sub) {
+              setIsEnabled(true);
+            }
+          });
         });
       });
     }

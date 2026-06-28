@@ -35,6 +35,8 @@ export const subscribeUserToPush = async () => {
     throw new Error('Notification permission was denied.');
   }
 
+  // Ensure Service Worker is registered
+  await registerServiceWorker();
   const reg = await navigator.serviceWorker.ready;
   
   // Fetch public VAPID key from backend
@@ -57,6 +59,7 @@ export const unsubscribeUserFromPush = async () => {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
   
   try {
+    await registerServiceWorker();
     const reg = await navigator.serviceWorker.ready;
     const subscription = await reg.pushManager.getSubscription();
     if (subscription) {
