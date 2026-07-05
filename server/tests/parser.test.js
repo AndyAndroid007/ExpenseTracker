@@ -36,6 +36,14 @@ describe('Modular Parsing Engine Unit Tests', () => {
             const res = parseMessage('Coffee 150');
             expect(res.type).toBe('expense');
             expect(res.amount).toBe(150);
+
+            const burgerRes = parseMessage('Original Burger 350');
+            expect(burgerRes.type).toBe('expense');
+            expect(burgerRes.amount).toBe(350);
+            expect(burgerRes.category).toBe('Food');
+
+            const queryRes = parseMessage('How should I improve my spendings and save more?');
+            expect(queryRes.type).not.toBe('save_day');
         });
     });
 
@@ -46,6 +54,9 @@ describe('Modular Parsing Engine Unit Tests', () => {
             expect(parseMessage('dinner 200.75usd').amount).toBe(200.75);
             expect(parseMessage('shopping 1,000 INR').amount).toBe(1000);
             expect(parseMessage('Coffee cost 120 bucks').amount).toBe(120);
+            expect(parseMessage('Spent 8.5k on rent').amount).toBe(8500);
+            expect(parseMessage('Uber 10k').amount).toBe(10000);
+            expect(parseMessage('3 grand on laptop').amount).toBe(3000);
         });
 
         it('should handle standard thousands and decimal commas correctly', () => {

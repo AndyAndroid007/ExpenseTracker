@@ -23,7 +23,7 @@ export const parseMessage = (rawText, timezoneOffsetMinutes = 0) => {
 
     // 1. Detect Entry Type using robust word boundary regexes
     const noSpendPattern = /\b(?:no|zero|0|did\s+not|didn'?t)\s+spend(?:ing)?\b/i;
-    const saveDayPattern = /\b(?:saved?|save-day|save_day|saved?\s+(?:money|today))\b/i;
+    const saveDayPattern = /\b(?:save-day|save_day|saved?\s+(?:money|today|yesterday|day)|saved?\s+(?:₹|\$|€|£|rs\.?|inr)?\s*\d+)\b/i;
 
     let type = 'expense';
     if (noSpendPattern.test(normalized) || saveDayPattern.test(normalized)) {

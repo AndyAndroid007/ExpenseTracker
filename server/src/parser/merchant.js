@@ -37,5 +37,5 @@ export const extractUnmappedMerchant = (rawText, category) => {
     // Filter out stopwords and known category keywords
     const filtered = words.filter(word => !STOP_WORDS.has(word) && !allKeywords.has(word));
 
-    return filtered.length > 0 ? filtered[0] : null;
+    return filtered.length > 0 ? filtered.join(' ') : null;
 };

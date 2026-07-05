@@ -19,9 +19,15 @@ describe('LLM Fallback Service & Orchestrator Integration Tests', () => {
     const offset = -330; // IST UTC+5:30
     const today = getLocalDateString(offset, 0);
 
-    beforeEach(() => {
+    beforeEach(async () => {
         jest.clearAllMocks();
         process.env.GEMINI_API_KEY = 'mocked-gemini-api-key';
+        try {
+            const redis = (await import('../src/streak-engine/startUp.js')).default;
+            if (redis && redis.isOpen) {
+                await redis.del('rate:lowconf:test-user-id:day');
+            }
+        } catch (err) {}
     });
 
     afterAll(() => {
@@ -30,7 +36,7 @@ describe('LLM Fallback Service & Orchestrator Integration Tests', () => {
 
     describe('Fast Regex Bypass (High/Medium Confidence)', () => {
         it('should bypass LLM completely if local regex parses with high confidence', async () => {
-            const result = await parseEntry('Swiggy 250 today', offset);
+            const result = await parseEntry('test-user-id', 'Swiggy 250 today', offset);
             
             expect(result.type).toBe('expense');
             expect(result.amount).toBe(250);
@@ -40,7 +46,7 @@ describe('LLM Fallback Service & Orchestrator Integration Tests', () => {
         });
 
         it('should bypass LLM completely if local regex parses with medium confidence', async () => {
-            const result = await parseEntry('Uber 300', offset);
+            const result = await parseEntry('test-user-id', 'Uber 300', offset);
             
             expect(result.type).toBe('expense');
             expect(result.amount).toBe(300);
@@ -67,7 +73,7 @@ describe('LLM Fallback Service & Orchestrator Integration Tests', () => {
                 }
             });
 
-            const result = await parseEntry(rawText, offset);
+            const result = await parseEntry('test-user-id', rawText, offset);
 
             expect(result.rawText).toBe(rawText);
             expect(result.type).toBe('expense');
@@ -84,7 +90,7 @@ describe('LLM Fallback Service & Orchestrator Integration Tests', () => {
             // Mock LLM throwing a network exception
             mockGenerateContent.mockRejectedValue(new Error('Network disconnected or Rate Limited'));
 
-            const result = await parseEntry(rawText, offset);
+            const result = await parseEntry('test-user-id', rawText, offset);
 
             // Output should equal the original local regex low confidence result
             expect(result.rawText).toBe(rawText);
@@ -99,7 +105,7 @@ describe('LLM Fallback Service & Orchestrator Integration Tests', () => {
             delete process.env.GEMINI_API_KEY;
             const rawText = 'some low confidence sentence';
 
-            const result = await parseEntry(rawText, offset);
+            const result = await parseEntry('test-user-id', rawText, offset);
 
             expect(result.confidenceLevel).toBe('low');
             expect(mockGenerateContent).not.toHaveBeenCalled();
@@ -120,7 +126,7 @@ describe('LLM Fallback Service & Orchestrator Integration Tests', () => {
                 }
             });
 
-            const result = await parseEntry(rawText, offset);
+            const result = await parseEntry('test-user-id', rawText, offset);
 
             expect(result.confidenceLevel).toBe('high'); // Promoted to high by LLM parse success
             
@@ -144,7 +150,7 @@ describe('LLM Fallback Service & Orchestrator Integration Tests', () => {
                     })
                 }
             });
-            const result = await parseEntry(rawText, offset);
+            const result = await parseEntry('test-user-id', rawText, offset);
             expect(result.confidenceLevel).toBe('high');
             expect(mockGenerateContent).toHaveBeenCalledTimes(1);
         });

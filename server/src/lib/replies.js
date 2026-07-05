@@ -58,6 +58,18 @@ export const REPLIES = {
     ({ amount, streak }) => `Saved ₹${amount} logged. Great job! 💰 Streak: ${streak} days`,
     ({ amount, streak }) => `Added savings of ₹${amount}. 💰 Streak: ${streak} days`,
     ({ amount, streak }) => `₹${amount} saved today logged successfully! 💰 Streak: ${streak} days`
+  ],
+  low_confidence_blocked: [
+    () => "You've sent a few vague messages. To log this accurately, please specify both an amount and a category (e.g., 'Lunch 200').",
+    () => "Hmm, I need a bit more detail. Please tell me the amount and what you spent it on (e.g., 'Coffee 150').",
+    () => "I'm having trouble parsing this. Please specify a clear amount and category so I can record it correctly.",
+    () => "Let's make it specific! Please log with an amount and category, like 'Grocery 1200'.",
+    () => "To protect accuracy, please log with a clear number and description (e.g., 'Spent 400 on petrol')."
+  ],
+  query_rate_limited: [
+    () => "Whoa, slow down! Let me catch my breath before the next question.",
+    () => "You're moving fast! Please wait a moment before asking another question.",
+    () => "Take it easy! Give me a few seconds to process before your next query."
   ]
 };
 

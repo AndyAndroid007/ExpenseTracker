@@ -13,6 +13,10 @@ describe('Unrecognized Merchant Extraction Unit Tests', () => {
         expect(extractUnmappedMerchant('100 at blue_tokai', 'General')).toBe('blue_tokai');
         expect(extractUnmappedMerchant('subscription for zoom 1000', 'General')).toBe('zoom');
 
+        // Multi-word merchant name extraction
+        expect(extractUnmappedMerchant('spent 350 on original combo', 'General')).toBe('original combo');
+        expect(extractUnmappedMerchant('paid 150 to blue tokai', 'General')).toBe('blue tokai');
+
         // Direct patterns
         expect(extractUnmappedMerchant('blinkit 150', 'General')).toBe('blinkit');
     });

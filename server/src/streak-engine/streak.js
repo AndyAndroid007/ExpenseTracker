@@ -48,7 +48,7 @@ const loadStreakFromRedis = async (userId) => {
 const saveStreakToRedis = async (userId, {currentStreak, lastLoggedDate}) => {
     try {
         await redis.mSet([
-            [getCurrentKey(userId), currentStreak],
+            [getCurrentKey(userId), String(currentStreak)],
             [getLastDateKey(userId), lastLoggedDate || 'null']
         ]);
 

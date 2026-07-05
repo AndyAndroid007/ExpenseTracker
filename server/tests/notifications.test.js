@@ -14,11 +14,10 @@ describe('Notifications API Integration Tests', () => {
 
         const res = await request(app)
             .post('/api/auth/register')
-            .send({ email: 'notifications-tester@example.com' });
+            .send({ email: 'notifications-tester@example.com', password: 'password123' });
 
         authToken = res.headers['set-cookie'][0];
-        const userRes = await request(app).get('/api/auth/me').set('Cookie', authToken);
-        userId = userRes.body.user.id;
+        userId = res.body.user.id;
     });
 
     it('should return VAPID public key', async () => {

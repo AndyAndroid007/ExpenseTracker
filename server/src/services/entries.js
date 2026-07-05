@@ -5,6 +5,8 @@ import ApiError from '../exceptions/ApiError.js';
 import logger from '../utils/logger.js';
 import { maintainStreak } from '../streak-engine/streak.js';
 import {parseEntry} from './entryParserOrchestrator.js';
+import { answerQueryWithLLM } from './llm.js';
+import { incrementAndCheckQueryLimit } from '../middlewares/rateLimitMiddleware.js';
 import redis from '../streak-engine/startUp.js';
 import * as merchantRepository from '../repositories/merchant.js';
 import { getLocalDateString } from '../parser/dates.js';
@@ -55,7 +57,7 @@ export const postEntry = async (userId, rawText, timezoneOffsetMinutes, ianaTime
     let parsed;
     try {
         logger.debug({ userId, rawText }, 'Beginning transaction parsing orchestration');
-        parsed = await parseEntry(rawText, timezoneOffsetMinutes, ianaTimezone);
+        parsed = await parseEntry(userId, rawText, timezoneOffsetMinutes, ianaTimezone);
         logger.debug({ userId, parsedResult: parsed }, 'Parsing orchestration returned resolved fields');
     } catch (parseErr) {
         logger.error({ err: parseErr, userId }, 'Failed to parse raw entry text');
@@ -90,9 +92,22 @@ export const postEntry = async (userId, rawText, timezoneOffsetMinutes, ianaTime
         };
     }
 
-    // Handle non-logging intents (query or other chitchat)
+    // Handle non-logging intents (query or other chitchat or low confidence limit block)
     if (parsed.intent !== 'log_expense') {
-        const sysMsgText = getRandomReply(parsed.intent === 'query' ? 'query_redirect' : 'chitchat');
+        let sysMsgText;
+        if (parsed.intent === 'query') {
+            const limitCheck = await incrementAndCheckQueryLimit(userId);
+            if (limitCheck.limited) {
+                throw new ApiError(429, limitCheck.message);
+            }
+            const localToday = getLocalDateString(timezoneOffsetMinutes, 0);
+            const llmAnswer = await answerQueryWithLLM(userId, rawText, localToday, timezoneOffsetMinutes, ianaTimezone);
+            sysMsgText = llmAnswer || getRandomReply('query_redirect');
+        } else if (parsed.intent === 'low_confidence_blocked') {
+            sysMsgText = getRandomReply('low_confidence_blocked');
+        } else {
+            sysMsgText = getRandomReply('chitchat');
+        }
 
         const sysMsg = await chatRepository.createChatMessage({
             userId,
