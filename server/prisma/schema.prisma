@@ -120,6 +120,14 @@ enum ConfidenceLevel {
   high
 }
 
+model IntentMapping {
+  id             String   @id @default(uuid()) @db.Uuid
+  normalizedKey  String   @unique
+  intent         String
+  createdAt      DateTime @default(now())
+}
+
+
 
 
 

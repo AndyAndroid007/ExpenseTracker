@@ -2,11 +2,8 @@ import redis from './startUp.js';
 import prisma from '../lib/db.js';
 import logger from '../utils/logger.js';
 import {getTodayInUserZone, getPreviousDate, toIsoDate } from '../utils/dates.js';
+import { VALID_STREAK_ENTRY_TYPES } from '../parser/patterns.js';
 
-const VALID_STREAK_ENTRY_TYPES = new Set([
-    'expense',
-    'save_day'
-]);
 
 const getCurrentKey = (userId) => `streak:${userId}:current`;
 const getLastDateKey = (userId) => `streak:${userId}:last_date`;

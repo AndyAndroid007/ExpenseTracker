@@ -1,4 +1,15 @@
 import { getDateByOffsetMinutes } from "../utils/dates.js";
+import {
+    DAYS_BEFORE_YESTERDAY_REGEX,
+    DAY_BEFORE_YESTERDAY_REGEX,
+    YESTERDAY_REGEX,
+    TOMORROW_REGEX,
+    TODAY_REGEX,
+    DAYS_BEFORE_REGEX,
+    DAYS_AFTER_REGEX,
+    WEEKDAYS
+} from "./patterns.js";
+
 /**
  * Calculates the YYYY-MM-DD date in the user's local timezone.
  * 
@@ -13,10 +24,6 @@ export const getLocalDateString = (timezoneOffsetMinutes = 0, relativeDays = 0) 
     return getDateByOffsetMinutes(targetDate, timezoneOffsetMinutes);
 };
 
-const WEEKDAYS = {
-    sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6
-};
-
 /**
  * Parses conversational date hints (e.g. "yesterday", "monday") into a YYYY-MM-DD date.
  * 
@@ -26,7 +33,7 @@ const WEEKDAYS = {
  */
 export const parseExpenseDate = (text, timezoneOffsetMinutes = 0) => {
     // 0. Relative past days from yesterday (e.g. "3 days before yesterday", "day before yesterday")
-    const daysBeforeYesterdayMatch = text.match(/\b(\d+)\s+days?\s+before\s+yesterday\b/i);
+    const daysBeforeYesterdayMatch = text.match(DAYS_BEFORE_YESTERDAY_REGEX);
     if (daysBeforeYesterdayMatch) {
         const days = parseInt(daysBeforeYesterdayMatch[1], 10);
         if (days < 100) {
@@ -34,34 +41,34 @@ export const parseExpenseDate = (text, timezoneOffsetMinutes = 0) => {
         }
     }
 
-    if (/\bday\s+before\s+yesterday\b/i.test(text)) {
+    if (DAY_BEFORE_YESTERDAY_REGEX.test(text)) {
         return { date: getLocalDateString(timezoneOffsetMinutes, -2), explicit: true };
     }
 
     // 1. Explicit yesterday
-    if (/\byesterday\b/i.test(text)) {
+    if (YESTERDAY_REGEX.test(text)) {
         return { date: getLocalDateString(timezoneOffsetMinutes, -1), explicit: true };
     }
     
     // 2. Explicit tomorrow (useful for logging forward transactions)
-    if (/\btomorrow\b/i.test(text)) {
+    if (TOMORROW_REGEX.test(text)) {
         return { date: getLocalDateString(timezoneOffsetMinutes, 1), explicit: true };
     }
     
     // 3. Explicit today
-    if (/\btoday\b/i.test(text)) {
+    if (TODAY_REGEX.test(text)) {
         return { date: getLocalDateString(timezoneOffsetMinutes, 0), explicit: true };
     }
 
     // 4. Relative past days (e.g. "2 days ago", "3 days back", "before 2 days", "2 days before")
-    const daysBeforeMatch = text.match(/\b(?:before\s+(\d+)\s+days?|(\d+)\s+days?\s+(?:ago|back|before))\b/i);
+    const daysBeforeMatch = text.match(DAYS_BEFORE_REGEX);
     if (daysBeforeMatch) {
         const days = parseInt(daysBeforeMatch[1] || daysBeforeMatch[2], 10);
         return { date: getLocalDateString(timezoneOffsetMinutes, -days), explicit: true };
     }
 
     // 5. Relative future days (e.g. "1 day after", "2 days later", "after 1 day")
-    const daysAfterMatch = text.match(/\b(?:after\s+(\d+)\s+days?|(\d+)\s+days?\s+(?:later|after))\b/i);
+    const daysAfterMatch = text.match(DAYS_AFTER_REGEX);
     if (daysAfterMatch) {
         const days = parseInt(daysAfterMatch[1] || daysAfterMatch[2], 10);
         return { date: getLocalDateString(timezoneOffsetMinutes, days), explicit: true };

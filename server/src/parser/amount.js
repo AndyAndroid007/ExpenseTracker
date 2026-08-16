@@ -1,4 +1,5 @@
 import { cleanNumberString } from './helpers.js';
+import { AMOUNT_REGEX } from './patterns.js';
 
 /**
  * Extracts the first valid numeric amount from conversational text.
@@ -7,13 +8,12 @@ import { cleanNumberString } from './helpers.js';
  * @returns {number|null} The parsed amount or null
  */
 export const extractAmount = (text) => {
-    // Matches digits with potential dots and commas, with optional currency prefixes or suffixes, optionally followed by 'k', 'kilo', 'grand', or 'grands'
-    const amountRegex = /(?:₹|\$|€|£|rs\.?|inr|usd|eur|bucks)?\s*(\d+(?:[\.,]\d+)*)\s*(k|kilo|grand|grands)?\s*(?:rs\.?|inr|usd|eur|bucks)?/gi;
+    AMOUNT_REGEX.lastIndex = 0;
     
     let match;
     const candidates = [];
     
-    while ((match = amountRegex.exec(text)) !== null) {
+    while ((match = AMOUNT_REGEX.exec(text)) !== null) {
         const numStr = match[1];
         const hasK = match[2] && (match[2].toLowerCase().startsWith('k') || match[2].toLowerCase().startsWith('g'));
         let parsed = parseFloat(cleanNumberString(numStr));

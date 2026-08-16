@@ -3,14 +3,14 @@ import { extractCategory } from './categories.js';
 import { parseExpenseDate } from './dates.js';
 import logger from '../utils/logger.js';
 import { extractUnmappedMerchant } from './merchant.js';
+import { NO_SPEND_PATTERN, SAVE_DAY_PATTERN } from './patterns.js';
 
 /**
- * Main parser entry point.
- * Normalizes raw text and parses it into structured fields.
+ * Parses a raw conversational text string into structured entry fields.
  * 
- * @param {string} rawText - User message e.g. "Swiggy 250 yesterday"
- * @param {number} timezoneOffsetMinutes - Offset in minutes (e.g. -330 for IST)
- * @returns {object} Final structured parsed entry details
+ * @param {string} rawText - Normalized text
+ * @param {number} timezoneOffsetMinutes - Timezone offset in minutes
+ * @returns {object} Structured output containing amount, category, type, and dates
  */
 export const parseMessage = (rawText, timezoneOffsetMinutes = 0) => {
     if (!rawText || typeof rawText !== 'string') {
@@ -22,11 +22,8 @@ export const parseMessage = (rawText, timezoneOffsetMinutes = 0) => {
     const normalized = rawText.toLowerCase().trim();
 
     // 1. Detect Entry Type using robust word boundary regexes
-    const noSpendPattern = /\b(?:no|zero|0|did\s+not|didn'?t)\s+spend(?:ing)?\b/i;
-    const saveDayPattern = /\b(?:save-day|save_day|saved?\s+(?:money|today|yesterday|day)|saved?\s+(?:₹|\$|€|£|rs\.?|inr)?\s*\d+)\b/i;
-
     let type = 'expense';
-    if (noSpendPattern.test(normalized) || saveDayPattern.test(normalized)) {
+    if (NO_SPEND_PATTERN.test(normalized) || SAVE_DAY_PATTERN.test(normalized)) {
         type = 'save_day';
     }
     logger.trace({ rawText, type }, 'Local resolver determined entry type');
@@ -37,7 +34,7 @@ export const parseMessage = (rawText, timezoneOffsetMinutes = 0) => {
         amount = extractAmount(normalized);
     }
     else if (type === 'save_day') {
-        amount = noSpendPattern.test(normalized) ? null : (extractAmount(normalized));
+        amount = NO_SPEND_PATTERN.test(normalized) ? null : (extractAmount(normalized));
     }
     logger.trace({ rawText, amount }, 'Local resolver extracted amount');
 

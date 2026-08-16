@@ -1,13 +1,5 @@
 import { CATEGORY_KEYWORDS } from './categories.js';
-
-// Common English words, prepositions, and transaction verbs to filter out
-const STOP_WORDS = new Set([
-    'spent', 'spent on', 'spent for', 'paid', 'paid to', 'paid for', 
-    'bought', 'buy', 'purchase', 'on', 'at', 'to', 'for', 'the', 'a', 
-    'in', 'of', 'with', 'by', 'from', 'today', 'yesterday', 'tomorrow',
-    'rs', 'rs.', 'rupees', 'inr', 'bucks', 'amount', 'expense', 'money',
-    'around', 'about', 'onwards', 'roughly', 'approx', 'approximately'
-]);
+import { MERCHANT_STOP_WORDS } from './patterns.js';
 
 /**
  * Extracts candidate merchant name if category is 'General'
@@ -35,7 +27,7 @@ export const extractUnmappedMerchant = (rawText, category) => {
     }
 
     // Filter out stopwords and known category keywords
-    const filtered = words.filter(word => !STOP_WORDS.has(word) && !allKeywords.has(word));
+    const filtered = words.filter(word => !MERCHANT_STOP_WORDS.has(word) && !allKeywords.has(word));
 
     return filtered.length > 0 ? filtered.join(' ') : null;
 };
