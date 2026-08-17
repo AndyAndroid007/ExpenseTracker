@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect } from 'react';
 import api from '../utils/api';
 import logger from '../utils/logger';
 import axios from 'axios';

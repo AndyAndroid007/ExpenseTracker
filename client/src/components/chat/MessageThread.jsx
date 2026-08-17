@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react';
 import ConfirmCard from './ConfirmCard';
 import StreakToast from './StreakToast';
-import MaskedAmount from '../MaskedAmount';
 
-export default function MessageThread({ messages, onConfirm, onEdit }) {
+export default function MessageThread({ messages, onConfirm, onEdit: _onEdit }) {
   const bottomRef = useRef(null);
 
   useEffect(() => {

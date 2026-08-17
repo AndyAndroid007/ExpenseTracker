@@ -58,7 +58,7 @@ export default function NotificationsSection() {
       } else {
         setAlertInfo({ type: 'error', message: res.data?.message || 'Failed to dispatch test notification.' });
       }
-    } catch (err) {
+    } catch {
       setAlertInfo({ type: 'error', message: 'Failed to reach server for test notification.' });
     }
   };
