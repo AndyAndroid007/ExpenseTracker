@@ -9,7 +9,11 @@
     "dev": "nodemon src/server.js",
     "dev:all": "node scripts/dev-runner.js",
     "db:reset": "NODE_ENV=test node scripts/reset-db.js",
-    "db:cleanup-guests": "node scripts/cleanup-guests.js"
+    "db:cleanup-guests": "node scripts/cleanup-guests.js",
+    "seed": "prisma db seed"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "keywords": [],
   "author": "",

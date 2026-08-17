@@ -26,12 +26,22 @@ export const updateChatMessage = async (messageId, data) => {
     });
 };
 
+/**
+ * PERFORMANCE DECISION:
+ * Direct PostgreSQL JSONB path filtering `payload: { path: ['id'], equals: entryId }`.
+ * Avoids loading the entire historical list of user confirmation messages into Node.js
+ * memory and running an in-memory `.find()`, which causes heavy network transfer and CPU
+ * bloat as chat history expands.
+ */
 export const findConfirmCardMessage = async (userId, entryId) => {
-    const messages = await prisma.chatMessage.findMany({
+    return await prisma.chatMessage.findFirst({
         where: {
             userId,
-            type: 'confirm_card'
+            type: 'confirm_card',
+            payload: {
+                path: ['id'],
+                equals: entryId
+            }
         }
     });
-    return messages.find(m => m.payload && typeof m.payload === 'object' && m.payload.id === entryId);
 };
